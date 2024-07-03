@@ -150,7 +150,8 @@ $expectedPowerShellModules = @(
 
 foreach ($moduleName in $expectedPowerShellModules) {
     wi "Checking that $moduleName module is installed."
-    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force }"
+    $command = "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force } else { Write-Host 'Module $moduleName is installed.' }"
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "& { $command }"
 }
 
 wi "Ready for execution of Start-SystemSetup.ps1 to complete local configuration."
