@@ -44,6 +44,19 @@ function Write-HeadingBlock($Message) {
 
 Write-HeadingBlock -Message 'Running System Setup'
 
+$settings = Get-SimpleSettingConfigurationFile
+if ((Test-Path -Path $settings)) {
+    wi "Using settings file: $settings"
+    $currentSettings = Get-SimpleSetting 
+    if ($null -eq $currentSettings -or $currentSettings -eq @{}) {
+        ww "Unable to load settings file: $settings"
+        return
+    }
+}
+else {
+    ww "Unable to find settings file: $settings"
+    return
+}
 
 #
 # ---------------------------------- [Create Scripts Junction Point] ---------------------------------
@@ -190,7 +203,7 @@ Write-HeadingBlock -Message 'Update SCOOP applications'
 $appStatus = scoop status
 $appStatus | % {
     wi "Updating $($_.Name) to $($_.'Latest Version') from $($_.'Installed Version')"
-    scoop update $_ *> $null
+    scoop update $_.Name
 }
 
 # -------------------- [ Cleanup SCOOP ]
@@ -232,7 +245,8 @@ else {
             if ($null -eq $wtLink) {
                 ww "Unable to create Windows Terminal symlink"
             }
-        } else {
+        }
+        else {
             wi 'Windows Terminal settings are already linked'
         }
     }
@@ -303,7 +317,8 @@ function Set-RegistryItem {
 
     if (-not(Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName )) {
         wi "$RegistryItemDescription : Unable to set $RegistryItemName to ($RegistryItemType)$RegistryItemValue "
-    } else {
+    }
+    else {
         $newSettings = Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName
         wi "$RegistryItemDescription : Set $RegistryItemName to ($RegistryItemType)$RegistryItemValue"
         wi "$RegistryItemDescription : $RegistryItemName Actually ($RegistryItemType)$($newSettings."$RegistryItemName")"
@@ -344,7 +359,7 @@ $windowsFeatures = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsFeatur
 
 foreach ($feature in $windowsFeatures) {
     wi "Checking for Windows Feature '$feature'"
-    $featureInstalled = (gsudo {Get-WindowsOptionalFeature -FeatureName $feature -Online}).State
+    $featureInstalled = (gsudo { Get-WindowsOptionalFeature -FeatureName $args[0] -Online } -args $feature).State
     if (!$featureInstalled) {
         wi "Installing Windows Feature '$feature'"
         gsudo Enable-WindowsOptionalFeature -Online -FeatureName $feature -All -NoRestart
