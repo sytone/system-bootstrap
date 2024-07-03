@@ -328,11 +328,11 @@ function Set-RegistryItem {
         gsudo New-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName -PropertyType $RegistryItemType -Value $RegistryItemValue #| Out-Null
     }
 
-    if ((Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName )) {
+    if ((Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName -ErrorAction SilentlyContinue)) {
         gsudo Set-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName -Value $RegistryItemValue | Out-Null
     }
 
-    if (-not(Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName )) {
+    if (-not(Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName -ErrorAction SilentlyContinue )) {
         wi "$RegistryItemDescription : Unable to set $RegistryItemName to ($RegistryItemType)$RegistryItemValue "
     }
     else {

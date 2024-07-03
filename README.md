@@ -11,9 +11,9 @@ $env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveConsumer\scripts\systemconfigura
 
 # Work or School
 [System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$env:OneDriveCommercial\scripts", [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', "$env:OneDriveConsumer\scripts\systemconfiguration.json", [System.EnvironmentVariableTarget]::User)
+[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', "$env:OneDriveCommercial\scripts\systemconfiguration.json", [System.EnvironmentVariableTarget]::User)
 $env:SYSTEM_SCRIPTS_ROOT = "$env:OneDriveCommercial\scripts"
-$env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveConsumer\scripts\systemconfiguration.json"
+$env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveCommercial\scripts\systemconfiguration.json"
 
 ```
 
