@@ -187,8 +187,11 @@ foreach ($app in $Script:domainScoopApps) {
 # ---------------------------------- [ Update SCOOP applications ] ----------------------------------
 Write-HeadingBlock -Message 'Update SCOOP applications'
 
-#(scoop export | ConvertFrom-Json).apps.Name | ForEach-Object { scoop update $_ *> $null}
-(scoop export | ConvertFrom-Json).apps.Name | ForEach-Object { wi "Checking if $_ needs update"; scoop update $_ *> $null }
+$appStatus = scoop status
+$appStatus | % {
+    wi "Updating $($_.Name) to $($_.'Latest Version') from $($_.'Installed Version')"
+    scoop update $_ *> $null
+}
 
 # -------------------- [ Cleanup SCOOP ]
 Write-HeadingBlock -Message 'Cleanup SCOOP'
@@ -341,7 +344,7 @@ $windowsFeatures = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsFeatur
 
 foreach ($feature in $windowsFeatures) {
     wi "Checking for Windows Feature '$feature'"
-    $featureInstalled = (gsudo Get-WindowsOptionalFeature -FeatureName $feature -Online).state
+    $featureInstalled = (gsudo {Get-WindowsOptionalFeature -FeatureName $feature -Online}).State
     if (!$featureInstalled) {
         wi "Installing Windows Feature '$feature'"
         gsudo Enable-WindowsOptionalFeature -Online -FeatureName $feature -All -NoRestart
