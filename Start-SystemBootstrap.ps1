@@ -95,8 +95,6 @@ if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
 # ---------------------------------- [Check for PowerShell Core 7+] ----------------------------------
 Write-HeadingBlock -Message 'Check for PowerShell Core 7+'
 $runningInPowerShell = $host.Version.Major -le 5
-$runningInPowerShellCoreButOld = $host.Version.Major -eq 6
-$runningInPowerShellCore = $host.Version.Major -ge 7
 
 if ($runningInPowerShell) {
     wi 'Running in PowerShell, ok to install / upgrade pwsh'
