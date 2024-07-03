@@ -58,7 +58,7 @@ if ((Test-Path -Path $settings)) {
     if ($null -eq $currentSettings -or $currentSettings -eq @{} -or ($currentSettings | ConvertTo-Json -Depth 10) -eq '{}') {
         ww "Unable to load settings file: $settings"
         ww "The file is invalid or empty, please set `$env:SIMPLESETTINGS_CONFIG_FILE to a valid configuration file."
-        ww "[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', '$env:OneDriveCommercial\systemconfiguration.json', [System.EnvironmentVariableTarget]::User)"
+        ww "See the readme.md files for information on setting this."
         return
     }
 }
@@ -75,24 +75,24 @@ Write-HeadingBlock -Message 'Create Scripts Junction Point'
 if($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
     ww "Unable get system scripts root."
     ww "The file is invalid or empty, please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
-    ww "[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', '$env:OneDriveCommercial', [System.EnvironmentVariableTarget]::User)"
+    ww "See the readme.md files for information on setting this."
 
     return
 }
 
 if(-not (Test-Path "$env:USERPROFILE\Scripts")) {
     wi "Creating the '$env:USERPROFILE\Scripts' junction"
-    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT\scripts" -ErrorAction SilentlyContinue | Out-Null
+    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT" -ErrorAction SilentlyContinue | Out-Null
 }
 
 $scriptProfilePath = get-item -Path "$env:USERPROFILE\Scripts" 
 
-if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedTarget -ne "$env:SYSTEM_SCRIPTS_ROOT\scripts") {
+if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedTarget -ne "$env:SYSTEM_SCRIPTS_ROOT") {
     wi "Removing the '$env:USERPROFILE\Scripts' path"
     Remove-Item -Path "$env:USERPROFILE\Scripts" -Force -Recurse -ErrorAction SilentlyContinue 
     
     wi "recreating the '$env:USERPROFILE\Scripts' junction"
-    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT\scripts" -ErrorAction SilentlyContinue | Out-Null
+    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT" -ErrorAction SilentlyContinue | Out-Null
     
     if (-not (Test-Path -Path "$env:USERPROFILE\Scripts\readme.md")) {
         wi 'Issue with mapped scripts path, aborting' 1
@@ -100,7 +100,7 @@ if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedT
     }
 }
 else {
-    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT\scripts'"
+    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT'"
 }
 
 # --------------------------------------- [Make Scripts Offline] ---------------------------------------
