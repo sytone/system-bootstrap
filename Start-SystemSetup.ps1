@@ -13,9 +13,6 @@ param (
     $SkipAdminUpdates,
 
     [String]
-    $OneDriveOverride = '',
-
-    [String]
     $DomainOverride = ''
 )
 
@@ -58,8 +55,10 @@ $settings = Get-SimpleSettingConfigurationFile
 if ((Test-Path -Path $settings)) {
     wi "Using settings file: $settings"
     $currentSettings = Get-SimpleSetting 
-    if ($null -eq $currentSettings -or $currentSettings -eq @{}) {
+    if ($null -eq $currentSettings -or $currentSettings -eq @{} -or ($currentSettings | ConvertTo-Json -Depth 10) -eq '{}') {
         ww "Unable to load settings file: $settings"
+        ww "The file is invalid or empty, please set `$env:SIMPLESETTINGS_CONFIG_FILE to a valid configuration file."
+        ww "[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', '$env:OneDriveCommercial\systemconfiguration.json', [System.EnvironmentVariableTarget]::User)"
         return
     }
 }
@@ -73,20 +72,27 @@ else {
 #
 Write-HeadingBlock -Message 'Create Scripts Junction Point'
 
-if ($OneDriveOverride -ne '') {
-    wi "Forcing update of OneDriveConsumer to: $OneDriveOverride"
-    [System.Environment]::SetEnvironmentVariable('OneDriveConsumer', $OneDriveOverride, [System.EnvironmentVariableTarget]::User)
-    $env:OneDriveConsumer = $OneDriveOverride
+if($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
+    ww "Unable get system scripts root."
+    ww "The file is invalid or empty, please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
+    ww "[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', '$env:OneDriveCommercial', [System.EnvironmentVariableTarget]::User)"
+
+    return
+}
+
+if(-not (Test-Path "$env:USERPROFILE\Scripts")) {
+    wi "Creating the '$env:USERPROFILE\Scripts' junction"
+    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT\scripts" -ErrorAction SilentlyContinue | Out-Null
 }
 
 $scriptProfilePath = get-item -Path "$env:USERPROFILE\Scripts" 
 
-if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedTarget -ne "$env:OneDriveConsumer\scripts") {
+if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedTarget -ne "$env:SYSTEM_SCRIPTS_ROOT\scripts") {
     wi "Removing the '$env:USERPROFILE\Scripts' path"
     Remove-Item -Path "$env:USERPROFILE\Scripts" -Force -Recurse -ErrorAction SilentlyContinue 
     
     wi "recreating the '$env:USERPROFILE\Scripts' junction"
-    $scriptJunction = New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:OneDriveConsumer\scripts" -ErrorAction SilentlyContinue
+    New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT\scripts" -ErrorAction SilentlyContinue | Out-Null
     
     if (-not (Test-Path -Path "$env:USERPROFILE\Scripts\readme.md")) {
         wi 'Issue with mapped scripts path, aborting' 1
@@ -94,11 +100,11 @@ if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedT
     }
 }
 else {
-    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:OneDriveConsumer\scripts'"
+    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT\scripts'"
 }
 
 # --------------------------------------- [Make Scripts Offline] ---------------------------------------
-Write-HeadingBlock -Message 'Make Scripts Offline'
+Write-HeadingBlock -Message 'Make Scripts Offline in OneDrive'
 
 if ($null -eq (Get-Command -Name attrib -ErrorAction SilentlyContinue)) {
     $env:Path += ';C:\Windows\System32'
@@ -111,6 +117,7 @@ $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\WindowsPowerShell\
 
 if ($env:OneDriveCommercial) {
     wi "Setting Offline for Onedrive for Work or School"
+    $attribResult = attrib -U +P "$env:OneDriveCommercial\scripts\*" /S /D
     $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\PowerShell\*" /S /D
     $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\WindowsPowerShell\*" /S /D
 }
@@ -378,5 +385,6 @@ foreach ($feature in $windowsFeatures) {
         wi "Windows Feature '$feature' is already installed."
     }
 }
+
 
 
