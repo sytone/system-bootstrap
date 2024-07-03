@@ -19,6 +19,16 @@ param (
     $DomainOverride = ''
 )
 
+$expectedPowerShellModules = @(
+    'poshlog',
+    'Microsoft.PowerShell.ConsoleGuiTools',
+    'SimpleSettings'
+)
+
+foreach ($moduleName in $expectedPowerShellModules) {
+    Import-Module $moduleName
+}
+
 # ---------------------------------------- [Setup logging] -----------------------------------------
 New-Logger |
 Set-MinimumLevel -Value Verbose |

@@ -156,4 +156,4 @@ foreach ($moduleName in $expectedPowerShellModules) {
 wi "Ready for execution of Start-SystemSetup.ps1 to complete local configuration."
 wi "Please run the following command to complete the setup."
 wi " "
-wi "& $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'"
+wi "& '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'"
