@@ -10,9 +10,9 @@ $files = @(
 )
 
 foreach ($file in $files) {
-    $scriptDownload = Invoke-WebRequest https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file
+    $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
     Write-Output "Downloading $file to C:\Temp\system-bootstrap\$file"
-    $scriptDownload.Content | Out-File -FilePath "C:\Temp\system-bootstrap\$file"
+    $scriptDownload.Content | Out-File -FilePath "C:\Temp\system-bootstrap\$file" -Force
 }
 
 Write-Output 'Running Start-SystemBootstrap.ps1'
