@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://aka.ms/configuration-dsc-schema/0.2
+properties:
+  resources:
+
+    # - resource: Microsoft.Windows.Developer/UserAccessControl
+    #   settings:
+    #     AdminConsentPromptBehavior: NoCredOrConsentRequired
+    #   directives:
+    #     allowPrerelease: true
+
+    - resource: Microsoft.Windows.Developer/DeveloperMode
+      id: EnableDeveloperMode
+      directives:
+        description: Enable Developer Mode
+        allowPrerelease: true
+      settings:
+        Ensure: Present
+
+    - resource: Microsoft.Windows.Developer/EnableDarkMode
+      settings:
+        Ensure: Present
+      directives:
+        allowPrerelease: true
+
+    - resource: Microsoft.Windows.Developer/Taskbar
+      settings:
+        SearchboxMode: Hide
+        TaskViewButton: Hide
+        WidgetsButton: Hide
+      directives:
+        allowPrerelease: true
+
+    - resource: Registry
+      settings:
+        Key: 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+        ValueName: TaskbarDa
+        Force: true
+        ValueType: DWORD
+        ValueData: 0 # Settings > Personalization > Taskbar > Widgets > Off
+
+    - resource: Registry
+      settings:
+        Key: 'HKLM:\Software\Microsoft\Edge'
+        ValueName: HideFirstRunExperience
+        Force: true
+        ValueType: DWORD
+        ValueData: 1 # Disable Microsoft Edge First Run Experience and Splash Screen
+
+    # Unpin Windows Store from taskbar
+    - resource: Registry
+      settings:
+        Ensure: Present
+        Key: HKCU:\SOFTWARE\Policies\Microsoft\Windows\Explorer
+        ValueName: NoPinningStoreToTaskbar
+        ValueType: DWord
+        ValueData: 1
+        Force: true
+
+    # 24-hour clock
+    - resource: Registry
+      settings:
+        Ensure: Present
+        Key: HKCU:\Control Panel\International
+        ValueName: sShortTime
+        ValueType: String
+        ValueData: 'HH:mm'
+        Force: true
+        
+    - resource: Microsoft.Windows.Developer/WindowsExplorer
+      settings:
+        FileExtensions: Show
+        HiddenFiles: Show
+        ItemCheckBoxes: Hide
+        RestartExplorer: true
+      directives:
+        allowPrerelease: true
+
+
+
+    # # Default console is WindowsTerminal
+    # - resource: PSDscResources/Registry
+    #   settings:
+    #     Ensure: Present
+    #     Key: HKCU:\Console\%%Startup
+    #     ValueName: DelegationConsole
+    #     ValueType: String
+    #     ValueData: "{2EACA947-7F5F-4CFA-BA87-8F7FBEEFBE69}"
+    #     Force: true
+
+    # # Default terminal is WindowsTerminal
+    # # https://www.elevenforum.com/t/change-default-terminal-application-in-windows-11.3410
+    # - resource: PSDscResources/Registry
+    #   settings:
+    #     Ensure: Present
+    #     Key: HKCU:\Console\%%Startup
+    #     ValueName: DelegationTerminal
+    #     ValueType: String
+    #     ValueData: "{E12CFF52-A866-4C77-9A90-F570A7AA2C6B}"
+    #     Force: true
+
+
+
+
+  configurationVersion: 0.2.0
