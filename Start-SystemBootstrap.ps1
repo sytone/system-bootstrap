@@ -73,8 +73,8 @@ git config --global credential.helper manager
 Write-HeadingBlock -Message 'Add SCOOP Buckets'
 
 if((Get-Command 'git' -ErrorAction SilentlyContinue)) {
-  git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/extras
-  git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/main
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/extras".Replace('\','/')
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/main".Replace('\','/')
 }
 
 if (-not (scoop bucket list).Name -contains 'main') {
