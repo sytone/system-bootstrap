@@ -56,14 +56,6 @@ else {
     wi 'Scoop installed.'
 }
 
-
-if (-not (scoop bucket list).Name -contains 'main') {
-    scoop bucket add main
-}
-if (-not (scoop bucket list).Name -contains 'extras') {
-    scoop bucket add extras
-}
-
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
 
 # ------------------------------------------ [Check for GIT] -----------------------------------------
@@ -76,7 +68,21 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
 }
 
 git config --global credential.helper manager
-git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/extras
+
+# ------------------------------------------ [Add SCOOP Buckets] ------------------------------------------
+Write-HeadingBlock -Message 'Add SCOOP Buckets'
+
+if((Get-Command 'git' -ErrorAction SilentlyContinue)) {
+  git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/extras
+  git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/main
+}
+
+if (-not (scoop bucket list).Name -contains 'main') {
+    scoop bucket add main
+}
+if (-not (scoop bucket list).Name -contains 'extras') {
+    scoop bucket add extras
+}
 
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
