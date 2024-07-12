@@ -76,6 +76,7 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
 }
 
 git config --global credential.helper manager
+git config --global --add safe.directory $ENV:USERPROFILE/scoop/buckets/extras
 
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
