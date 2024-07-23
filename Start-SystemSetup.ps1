@@ -386,5 +386,31 @@ foreach ($feature in $windowsFeatures) {
     }
 }
 
+# -------------------- [Local PS Gallery] --------------------
+Write-HeadingBlock 'Setting up Local PS Gallery'
 
+$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' 
+
+if($localPsGallerySource -eq '') {
+    wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
+} else {
+
+    if ($localPsGallerySource.Contains("`$env:")) {
+        $localPsGallerySource = Invoke-Expression -Command "`"$localPsGallerySource`""
+    }
+
+    # Check for the management scripts
+    $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+    $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+
+    if($registerScript -and $installScript) {
+        wi "Running Register-LocalPSRepository.ps1"
+        & "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+        wi "Running Install-AllLocalScripts.ps1"
+        & "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+    }
+    else {
+        wi "Unable to find management scripts in $localPsGallerySource. Skipping local PS Gallery setup."
+    }
+}
 
