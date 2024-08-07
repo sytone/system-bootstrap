@@ -159,11 +159,18 @@ $expectedPowerShellModules = @(
 foreach ($moduleName in $expectedPowerShellModules) {
     wi "Checking that $moduleName module is installed."
     $installCommand = "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force } else { Write-Host 'Module $moduleName is installed.' }"
-    wi "Running: $installCommand"
+    wi "Running:"
+    wi "$installCommand"
     & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "& { $installCommand }"
 }
 
+# ---------------------------------------- [Notifiy user to run next step] -----------------------------------------
+Write-HeadingBlock -Message 'Notifiy user to run next step'
+wi " "
 wi "Ready for execution of Start-SystemSetup.ps1 to complete local configuration."
 wi "Please run the following command to complete the setup."
 wi " "
 wi "& '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'"
+wi " "
+wi " "
+wi "Start-SystemBootstrap Completed"
