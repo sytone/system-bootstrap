@@ -184,5 +184,5 @@ wi "Start-SystemBootstrap Completed"
 
 $runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
 if($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
-    & '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'
 }
