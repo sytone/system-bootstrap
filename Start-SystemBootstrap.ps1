@@ -175,9 +175,14 @@ foreach ($moduleName in $expectedPowerShellModules) {
 Write-HeadingBlock -Message 'Notifiy user to run next step'
 wi " "
 wi "Ready for execution of Start-SystemSetup.ps1 to complete local configuration."
-wi "Please run the following command to complete the setup."
+wi "Please run the following command to complete the setup or press Enter/Y at prompt."
 wi " "
 wi "& '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'"
 wi " "
 wi " "
 wi "Start-SystemBootstrap Completed"
+
+$runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
+if($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
+    & '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'
+}
