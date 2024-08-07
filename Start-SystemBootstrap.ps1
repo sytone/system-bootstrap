@@ -4,7 +4,7 @@
 
 # This should always be 100% idempotent.
 function wi($message) {
-    Write-Host $message
+    Write-Host ">> $message"
 }
 
 function ww($message) {
@@ -12,7 +12,10 @@ function ww($message) {
 }
 
 function Write-HeadingBlock($Message) {
+    Write-Host ""
+    Write-Host "---"
     Write-Host "--- [$Message] ---"
+    Write-Host "---"
 }
 
 function Get-ScoopApp($Name) {
