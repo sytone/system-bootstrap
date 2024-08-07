@@ -1,3 +1,6 @@
+#Requires -PSEdition Desktop
+# Bootstrap should be run on windows powershell which is the desktop version.
+
 Write-Output 'Creating system-bootstrap folder.'
 $bootstrapFolder = "$env:temp\system-bootstrap"
 New-Item -Path $bootstrapFolder -ItemType Directory -Force | Out-Null
