@@ -82,9 +82,15 @@ if((Get-Command 'git' -ErrorAction SilentlyContinue)) {
 
 if (-not (scoop bucket list).Name -contains 'main') {
     scoop bucket add main
+    wi "main bucket added."    
+} else {
+    wi "main bucket already added."
 }
 if (-not (scoop bucket list).Name -contains 'extras') {
     scoop bucket add extras
+    wi "extras bucket added."
+} else {
+    wi "extras bucket already added."
 }
 
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
@@ -92,6 +98,7 @@ Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
 scoop status *> $null
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
+wi "Scoop updated."
 
 # ------------------------------------------ [Check for gsudo] -----------------------------------------
 Write-HeadingBlock -Message 'Check for gsudo'
