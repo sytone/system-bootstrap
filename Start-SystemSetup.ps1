@@ -49,6 +49,24 @@ function Write-HeadingBlock($Message) {
     Write-InfoLog -Message "--- `e[32m[`e[0m$Message`e[32m]`e[0m ---"
 }
 
+#
+# ---------------------------------- [Log Environment Configuration] ---------------------------------
+#
+Write-HeadingBlock -Message 'Environment Configuration Used'
+
+wi "       SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
+wi "SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
+wi "               USERPROFILE: '$env:USERPROFILE'"
+wi "          OneDriveConsumer: '$env:OneDriveConsumer'"
+wi "        OneDriveCommercial: '$env:OneDriveCommercial'"
+wi "              COMPUTERNAME: '$env:COMPUTERNAME'"
+wi "                USERDOMAIN: '$env:USERDOMAIN'"
+wi " USERDOMAIN_ROAMINGPROFILE: '$env:USERDOMAIN_ROAMINGPROFILE'"
+wi ""
+
+#
+# ---------------------------------- [Start Main System Setup] ---------------------------------
+#
 Write-HeadingBlock -Message 'Running System Setup'
 
 $settings = Get-SimpleSettingConfigurationFile
@@ -74,7 +92,7 @@ Write-HeadingBlock -Message 'Create Scripts Junction Point'
 
 if($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
     ww "Unable get system scripts root."
-    ww "The file is invalid or empty, please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
+    ww "Please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
     ww "See the readme.md files for information on setting this."
 
     return
@@ -110,10 +128,12 @@ if ($null -eq (Get-Command -Name attrib -ErrorAction SilentlyContinue)) {
     $env:Path += ';C:\Windows\System32'
 }
 
-wi "Setting Offline for Onedrive Personal"
-$attribResult = attrib -U +P "$env:OneDriveConsumer\scripts\*" /S /D
-$attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\PowerShell\*" /S /D
-$attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\WindowsPowerShell\*" /S /D
+if ($env:OneDriveConsumer) {
+    wi "Setting Offline for Onedrive Personal"
+    $attribResult = attrib -U +P "$env:OneDriveConsumer\scripts\*" /S /D
+    $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\PowerShell\*" /S /D
+    $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\WindowsPowerShell\*" /S /D
+}
 
 if ($env:OneDriveCommercial) {
     wi "Setting Offline for Onedrive for Work or School"
