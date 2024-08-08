@@ -1,0 +1,92 @@
+{
+  "SystemSetup": {
+    "localPSGallerySourcePath": "$env:USERPROFILE\\Scripts\\powershell\\LocalPSGallerySource",
+    "localPSGalleryRepoPath": "$env:USERPROFILE\\Scripts\\localpsgallery",
+    "gitConfiguration": {
+      "core.editor": "code --new-window --wait",
+      "pull.rebase": "false",
+      "init.defaultBranch": "main"
+    },
+    "scoopRegistryFiles": [
+      {
+        "RegistryFile": "7zip\\current\\install-context.reg",
+        "Description": "7zip registry"
+      },
+      {
+        "RegistryFile": "python\\current\\install-pep-514.reg",
+        "Description": "Python registry"
+      },
+      {
+        "RegistryFile": "vscode\\current\\install-context.reg",
+        "Description": "Visual Studio Code registry"
+      },
+      {
+        "RegistryFile": "vscode\\current\\install-associations.reg",
+        "Description": "Visual Studio Code associations"
+      },
+      {
+        "RegistryFile": "windows-terminal\\current\\install-context.reg",
+        "Description": "Windows Terminal registry"
+      }
+    ],
+    "windowsFeatures": [
+      "Microsoft-Hyper-V",
+      "Containers-DisposableClientVM"
+    ],
+    "registryChanges": [
+      {
+        "RegistryItemName": "LongPathsEnabled",
+        "RegistryItemDescription": "Long Paths",
+        "RegistryKeyPath": "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem",
+        "RegistryItemType": "DWORD",
+        "RegistryItemValue": "1"
+      },
+      {
+        "RegistryItemName": "EnableClipboardHistory",
+        "RegistryItemDescription": "Clipboard History",
+        "RegistryKeyPath": "HKCU:\\SOFTWARE\\Microsoft\\Clipboard",
+        "RegistryItemType": "DWORD",
+        "RegistryItemValue": "00000001"
+      }
+    ],
+    "windowsTerminalSettingsPath": "$env:USERPROFILE\\Scripts\\WindowsTerminal",
+    "DefaultScoopBuckets": [
+      [
+        "extras",
+        ""
+      ],
+      [
+        "java",
+        ""
+      ],
+      [
+        "nerd-fonts",
+        ""
+      ],
+      [
+        "games",
+        ""
+      ],
+      [
+        "github-gh",
+        "https://github.com/cli/scoop-gh.git"
+      ]
+    ],
+    "DefaultScoopApps": [
+      "pwsh",
+      "oh-my-posh",
+      "vscode",
+      "7zip",
+      "git",
+      "gh",
+      "windows-terminal",
+      "FiraCode",
+      "FiraCode-NF"
+    ],
+    "DOMAINNAMEScoopApps": [
+      "winmerge",
+      "msbuild-structured-log-viewer"
+    ],
+    "alias@domain.com-MappedDomain": "DOMAINNAME"
+  }
+}
