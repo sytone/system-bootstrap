@@ -1,3 +1,4 @@
+#Requires -PSEdition Desktop
 # This is run in powershell. It sets up all the 
 # installers and gets git and pwsh running and then
 # the other installers can run.
@@ -40,7 +41,7 @@ wi "Starting minimal boostrap to get the system to a point where full installati
 $currentExecutionPolicy = Get-ExecutionPolicy
 
 if($currentExecutionPolicy -ne 'Unrestricted') {
-    ww "Please set execution policy to 'Unrestricted' in a admin instance of PowerShell"
+    ww "Please set execution policy to 'Unrestricted' in a admin instance of PowerShell, it is currently set to '$currentExecutionPolicy'."
     ww "Set-ExecutionPolicy -ExecutionPolicy Unrestricted"
 }
 
@@ -60,6 +61,7 @@ else {
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
 
 # ------------------------------------------ [Check for GIT] -----------------------------------------
+# Minial footprint on start, just make sure git is around and any other scoop dependcies it has.
 Write-HeadingBlock -Message 'Check for GIT'
 if ($null -eq (Get-ScoopApp -Name 'git')) {
     ww 'Cannot find git in scoop, installing.'
@@ -142,6 +144,8 @@ $pwsh7Exe = $pwsh7Cmd.Path
 
 wi "Installing Winget modules if missing and validating winget is OK."
 
+# Everything is expected to run in powershell core, if you are using the deskop more then this will not be
+# a good experience.
 & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Client' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force }"
 & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Configuration' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Configuration -Scope CurrentUser -Force }"
 & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command 'Repair-WinGetPackageManager -Latest -Force -Verbose'
@@ -153,6 +157,7 @@ $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
 gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
 
 # ---------------------------------------- [Check for Required Modules] -----------------------------------------
+# Minial set of modules to make life easier. All in PowerShell Core.
 Write-HeadingBlock -Message 'Check for Required Modules'
 
 $expectedPowerShellModules = @(
@@ -180,7 +185,25 @@ wi " "
 wi " "
 wi "Start-SystemBootstrap Completed"
 
-$runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
+$validAutoRunValues = @{
+    'Y' = $true
+    'YES' = $true
+    'TRUE' = $true
+    1 = $true
+}
+
+if($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+    $runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
+} else {
+    if($validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+        $runNextStep = 'Y'
+    } else {
+        $runNextStep = 'N'
+    }
+}
+
 if($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
     & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "$PSScriptRoot\Start-SystemSetup.ps1"
 }
+
+

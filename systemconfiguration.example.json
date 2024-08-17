@@ -87,6 +87,9 @@
       "winmerge",
       "msbuild-structured-log-viewer"
     ],
+    "DefaultWinGetApps": [
+      "Microsoft.PowerToys"
+    ],    
     "alias@domain.com-MappedDomain": "DOMAINNAME"
   }
 }

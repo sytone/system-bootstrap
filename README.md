@@ -1,6 +1,6 @@
 # system-bootstrap
 
-The following enviroment variables need to be set to provide the path to the configuration used in bootstrap and your scripts root. If you are using OneDrive for this you can use the commands below.
+The following environment variables need to be set to provide the path to the configuration used in bootstrap and your scripts root. If you are using OneDrive for this you can use the commands below.
 
 ```PowerShell
 # Consumer
@@ -21,11 +21,17 @@ $env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveCommercial\scripts\systemconfigu
 iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex
 ```
 
+## Options
+
+### Auto Run Start-SystemSetup
+
+To automatically run the setup without prompt set `$env:SYSTEM_AUTO_RUN_SETUP` to `'TRUE'` or `'Y'`
+
 ## Local Powershell Repository
 
 To make scripts a bit more portable, this uses a local PSRepository. The packages are all stored in `{onedrive work/personal}/localpsgallery` and published to that location or installed from that location. It is a simple way to manage your personal scripts and have history if you want.
 
-To use this create a folder where you want to master your power shell scripts to be used across machines, this can be in a cloud based store like onedrive, currently only onedrive is supported but others could be added if there are ENV variables availible. You could use a git repo but again that is not supported in the scripts currently.
+To use this create a folder where you want to master your power shell scripts to be used across machines, this can be in a cloud based store like OneDrive, currently only OneDrive is supported but others could be added if there are ENV variables available. You could use a git repo but again that is not supported in the scripts currently.
 
 In this folder create a management directory and copy the files from the management folder in this repo to that folder.
 
@@ -33,3 +39,17 @@ In this folder create a management directory and copy the files from the managem
 - Install-AllLocalScripts.ps1 - Installs all scripts in the repo to the local machine.
 - Publish-ScriptLocally.ps1 - Publishes all scripts in the local folder to the repo.
 - Register-LocalPSRepository.ps1 - Registers the local repo so powershell can use it.
+
+## Script directory structure
+
+There are some conventions with this script. Under the scripts root it is expected to have folders per area/language. So for powershell the expected folder is `powershell`. Under this folder for powershell there is expected to be three subfolders. There are
+
+- CoreFunctions
+- CoreModulesAuto
+- CoreModulesManual
+
+If they do not exist the script creates them. CoreFunctions contains all your script that you write. CoreModulesAuto/Manual is where you put any customer modules, anything in the Auto folder will be automatically imported as a module.
+
+## Testing Locally
+
+To run and test this locally you can just run the `Get-BootstrapAndRun.ps1` command in powershell from the root of the repo, all paths are relative to the script location.

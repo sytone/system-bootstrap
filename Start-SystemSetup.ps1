@@ -3,15 +3,11 @@
 # PowerShell Core for bulk of environment setup.
 #
 # This should always be idempotent. It runs after the system bootstrap so we are in an expected
-# enviroment with all the right installers in place. Configuration is diriven by simple settings 
+# enviroment with all the right installers in place. Configuration is driven by simple settings 
 # configuration file.
 
 [CmdletBinding()]
 param (
-    [Parameter()]
-    [Switch]
-    $SkipAdminUpdates,
-
     [String]
     $DomainOverride = ''
 )
@@ -49,6 +45,10 @@ function Write-HeadingBlock($Message) {
     Write-InfoLog -Message "--- `e[32m[`e[0m$Message`e[32m]`e[0m ---"
 }
 
+function Write-FooterBlock() {
+    Write-InfoLog -Message ""
+}
+
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
 #
@@ -79,18 +79,18 @@ if ((Test-Path -Path $settings)) {
         ww "See the readme.md files for information on setting this."
         return
     }
-}
-else {
+} else {
     ww "Unable to find settings file: $settings"
     return
 }
 
+Write-FooterBlock
 #
 # ---------------------------------- [Create Scripts Junction Point] ---------------------------------
 #
 Write-HeadingBlock -Message 'Create Scripts Junction Point'
 
-if($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
+if ($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
     ww "Unable get system scripts root."
     ww "Please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
     ww "See the readme.md files for information on setting this."
@@ -98,7 +98,7 @@ if($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
     return
 }
 
-if(-not (Test-Path "$env:USERPROFILE\Scripts")) {
+if (-not (Test-Path "$env:USERPROFILE\Scripts")) {
     wi "Creating the '$env:USERPROFILE\Scripts' junction"
     New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT" -ErrorAction SilentlyContinue | Out-Null
 }
@@ -116,11 +116,11 @@ if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedT
         wi 'Issue with mapped scripts path, aborting' 1
         return
     }
-}
-else {
+} else {
     wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT'"
 }
 
+Write-FooterBlock
 # --------------------------------------- [Make Scripts Offline] ---------------------------------------
 Write-HeadingBlock -Message 'Make Scripts Offline in OneDrive'
 
@@ -142,14 +142,14 @@ if ($env:OneDriveCommercial) {
     $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\WindowsPowerShell\*" /S /D
 }
 
+Write-FooterBlock
 # ---------------------------------------- [Environment Setup] ---------------------------------------
 Write-HeadingBlock -Message 'Checking enviroment for machine and domain'
 
 wi "Computer Name: $env:COMPUTERNAME"
 if ($env:USERDOMAIN) {
     $userDomain = $env:USERDOMAIN
-}
-else {
+} else {
     $userDomain = $env:USERDOMAIN_ROAMINGPROFILE
 }
 
@@ -167,11 +167,13 @@ if ($DomainOverride -ne '') {
 
 wi "Computer Domain: $userDomain"
 
+Write-FooterBlock
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
 
+Write-FooterBlock
 # -------------------------------------- [Update SCOOP buckets] --------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP buckets'
 
@@ -184,18 +186,17 @@ $scoopBuckets | ForEach-Object {
         if ($_[1] -ne '') {
             wi "Adding scoop bucket '$($_[0])' -> '$($_[1])'"
             scoop bucket add $_[0] $_[1]
-        }
-        else {
+        } else {
             wi "Adding scoop bucket '$($_[0])''"
             scoop bucket add $_[0]
         }
-    }
-    else {
+    } else {
         wi "Skpping scoop bucket '$($_[0])' as it is already added."
 
     }
 }
 
+Write-FooterBlock
 # ---------------------------------- [ Install SCOOP applications ] ----------------------------------
 Write-HeadingBlock -Message 'Install SCOOP applications'
 
@@ -234,40 +235,73 @@ foreach ($app in $Script:machineScoopApps) {
 foreach ($app in $Script:domainScoopApps) {
     Install-ScoopApp -Name $app
 }
+
+Write-FooterBlock
 # ---------------------------------- [ Update SCOOP applications ] ----------------------------------
 Write-HeadingBlock -Message 'Update SCOOP applications'
 
 $appStatus = scoop status
-$appStatus | % {
+$appStatus | ForEach-Object {
     wi "Updating $($_.Name) to $($_.'Latest Version') from $($_.'Installed Version')"
     scoop update $_.Name
 }
 
+Write-FooterBlock
 # -------------------- [ Cleanup SCOOP ]
 Write-HeadingBlock -Message 'Cleanup SCOOP'
 
 try {
     scoop cleanup * *> $null
-}
-catch {
+} catch {
     wi 'Error trying to cleanup, most likely a locked file...'
 }
 
+Write-FooterBlock
+# -------------------- [Install / Update winget based packages] --------------------
+Write-HeadingBlock -Message 'Install WinGet packages'
+
+$defaultWinGetApps = Get-SimpleSetting -Section 'SystemSetup' -Name 'DefaultWinGetApps' -DefaultValue @()
+$machineWinGetApps = Get-SimpleSetting -Section 'SystemSetup' -Name "$($env:COMPUTERNAME)WinGetApps" -DefaultValue @()
+$domainWinGetApps = Get-SimpleSetting -Section 'SystemSetup' -Name "$($userDomain)WinGetApps" -DefaultValue @()
+
+foreach ($app in $defaultWinGetApps) {
+    wi "Installing Default WinGet package: $app"
+    winget install $app 
+}
+
+foreach ($app in $machineWinGetApps) {
+    wi "Installing Machine WinGet package: $app"
+    winget install $app 
+}
+
+foreach ($app in $domainWinGetApps) {
+    wi "Installing Domain WinGet package: $app"
+    winget install $app 
+}
+
+Write-FooterBlock
 # -------------------- [Update powershell core mapping in tools] --------------------
-Write-HeadingBlock -Message 'Updating powershell core mapping in c:\tools'
-# Make this configurable at some point.
+Write-HeadingBlock -Message 'Updating powershell core mapping'
 
-Remove-Item -Path "c:\tools\pwsh" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
-New-Item -ItemType Junction -Path "c:\tools\pwsh" -Target (get-item "$env:USERPROFILE\scoop\apps\pwsh\current").target -ErrorAction SilentlyContinue | Out-Null
+$toolsPath = Get-SimpleSetting -Section 'SystemSetup' -Name 'ToolsPath' -DefaultValue 'c:\tools'
+wi "Using tools path: $toolsPath"
 
+if (-not(Test-Path $toolsPath)) {
+    wi "Creating tools path: $toolsPath"
+    New-Item -ItemType Directory -Path $toolsPath -Force | Out-Null
+}
+
+Remove-Item -Path "$toolsPath\pwsh" -Force -Recurse -ErrorAction SilentlyContinue | Out-Null
+New-Item -ItemType Junction -Path "$toolsPath\pwsh" -Target (get-item "$env:USERPROFILE\scoop\apps\pwsh\current").target -ErrorAction SilentlyContinue | Out-Null
+
+Write-FooterBlock
 # -------------------- [Update Windows Terminal Configuration] --------------------
 Write-HeadingBlock 'Updating Windows Terminal Settings'
 
 $windowsTerminalSettingsPath = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsTerminalSettingsPath" -DefaultValue ''
 if ($windowsTerminalSettingsPath -eq '') {
     wi 'No Windows Terminal settings path configured'
-}
-else {
+} else {
     if ($windowsTerminalSettingsPath.Contains("`$env:")) {
         $windowsTerminalSettingsPath = Invoke-Expression -Command "`"$windowsTerminalSettingsPath`""
     }
@@ -282,14 +316,13 @@ else {
             if ($null -eq $wtLink) {
                 ww "Unable to create Windows Terminal symlink"
             }
-        }
-        else {
+        } else {
             wi 'Windows Terminal settings are already linked'
         }
     }
 }
 
-
+Write-FooterBlock
 # -------------------- [Update GIT configuration] --------------------
 Write-HeadingBlock 'Update GIT configuration'
 
@@ -301,32 +334,42 @@ foreach ($config in $gitConfiguration.PSObject.Properties) {
     git config --global $($config.Name) $($config.Value)
 }
 
+Write-FooterBlock
 # -------------------- [Run Powershell Help update in the background] --------------------
 Write-HeadingBlock -Message 'Run Powershell Help update in the background'
 $updateHelpJob = Start-Job -ScriptBlock { Update-Help -Scope CurrentUser }
 
-# -------------------- [Run any domain or machine specific actions] --------------------
-Write-HeadingBlock 'Checking for machine/domain specific scripts...'
-$domainScript = "Start-SystemSetup-$($userDomain).ps1"
-$machineScript = "Start-SystemSetup-$($env:COMPUTERNAME).ps1"
+Write-FooterBlock
+# -------------------- [Local PS Gallery] --------------------
+Write-HeadingBlock 'Setting up Local PS Gallery'
 
-wi "Checking for $PSScriptRoot/$domainScript"
-if (Test-Path $PSScriptRoot/$domainScript) {
-    Write-HeadingBlock "Running $domainScript"
-    & $PSScriptRoot/$domainScript
+$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' 
+
+if ($localPsGallerySource -eq '') {
+    wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
+} else {
+
+    if ($localPsGallerySource.Contains("`$env:")) {
+        $localPsGallerySource = Invoke-Expression -Command "`"$localPsGallerySource`""
+    }
+
+    # Check for the management scripts
+    $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+    $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+
+    if ($registerScript -and $installScript) {
+        wi "Running Register-LocalPSRepository.ps1"
+        & "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+        wi "Running Install-AllLocalScripts.ps1"
+        & "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+    } else {
+        wi "Unable to find management scripts in $localPsGallerySource. Skipping local PS Gallery setup."
+    }
 }
 
-wi "Checking for $PSScriptRoot/$machineScript"
-if (Test-Path $PSScriptRoot/$machineScript) {
-    Write-HeadingBlock "Running $machineScript"
-    & $PSScriptRoot/$machineScript
-}
-
-# -------------------- [Run setup that need UAC if not skipped] --------------------
-if ($SkipAdminUpdates) {
-    return
-}
-
+# -------------------- [Elevate cache enabled] --------------------
+# Cache the elevations to reduce the number of prompts. Not secure but will clear
+# once this script is done.
 gsudo cache on
 
 # -------------------- [Update the registry] --------------------
@@ -354,8 +397,7 @@ function Set-RegistryItem {
 
     if (-not(Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName -ErrorAction SilentlyContinue )) {
         wi "$RegistryItemDescription : Unable to set $RegistryItemName to ($RegistryItemType)$RegistryItemValue "
-    }
-    else {
+    } else {
         $newSettings = Get-ItemProperty -Path "$RegistryKeyPath" -Name $RegistryItemName
         wi "$RegistryItemDescription : Set $RegistryItemName to ($RegistryItemType)$RegistryItemValue"
         wi "$RegistryItemDescription : $RegistryItemName Actually ($RegistryItemType)$($newSettings."$RegistryItemName")"
@@ -368,7 +410,7 @@ foreach ($registryChange in $registryChanges) {
     Set-RegistryItem -RegistryKeyPath $registryChange.RegistryKeyPath -RegistryItemName $registryChange.RegistryItemName -RegistryItemType $registryChange.RegistryItemType -RegistryItemValue $registryChange.RegistryItemValue -RegistryItemDescription $registryChange.RegistryItemDescription
 }
 
-
+Write-FooterBlock
 # -------------------- [Update scoop apps with reg files] --------------------
 Write-HeadingBlock 'Update scoop apps with reg files'
 
@@ -389,6 +431,7 @@ foreach ($registryFile in $scoopRegistryFiles) {
     Import-RegistryFile -RegistryFile "$($env:USERPROFILE)\scoop\apps\$($registryFile.RegistryFile)" -Description $registryFile.Description
 }
 
+Write-FooterBlock
 # -------------------- [Install Windows Features] --------------------
 Write-HeadingBlock 'Install Windows Features'
 
@@ -400,37 +443,67 @@ foreach ($feature in $windowsFeatures) {
     if (!$featureInstalled) {
         wi "Installing Windows Feature '$feature'"
         gsudo Enable-WindowsOptionalFeature -Online -FeatureName $feature -All -NoRestart
-    }
-    else {
+    } else {
         wi "Windows Feature '$feature' is already installed."
     }
 }
 
-# -------------------- [Local PS Gallery] --------------------
-Write-HeadingBlock 'Setting up Local PS Gallery'
+Write-FooterBlock
+# -------------------- [Setup expected folder structure] --------------------
+Write-HeadingBlock 'Check for expected folder structure'
+$coreFunctionsRoot = Join-Path -Path $env:SYSTEM_SCRIPTS_ROOT -ChildPath "/powershell/CoreFunctions"
+$coreModulesAuto = Join-Path -Path $env:SYSTEM_SCRIPTS_ROOT -ChildPath "/powershell/CoreModulesAuto"
+$coreModulesManual = Join-Path -Path $env:SYSTEM_SCRIPTS_ROOT -ChildPath "/powershell/CoreModulesManual"
 
-$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' 
-
-if($localPsGallerySource -eq '') {
-    wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
-} else {
-
-    if ($localPsGallerySource.Contains("`$env:")) {
-        $localPsGallerySource = Invoke-Expression -Command "`"$localPsGallerySource`""
-    }
-
-    # Check for the management scripts
-    $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
-    $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
-
-    if($registerScript -and $installScript) {
-        wi "Running Register-LocalPSRepository.ps1"
-        & "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
-        wi "Running Install-AllLocalScripts.ps1"
-        & "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
-    }
-    else {
-        wi "Unable to find management scripts in $localPsGallerySource. Skipping local PS Gallery setup."
-    }
+if (-not (Test-Path $coreFunctionsRoot)) {
+    wi "Creating $coreFunctionsRoot"
+    New-Item -ItemType Directory -Path $coreFunctionsRoot -Force | Out-Null
 }
 
+if (-not (Test-Path $coreModulesAuto)) {
+    wi "Creating $coreModulesAuto"
+    New-Item -ItemType Directory -Path $coreModulesAuto -Force | Out-Null
+}
+
+if (-not (Test-Path $coreModulesManual)) {
+    wi "Creating $coreModulesManual"
+    New-Item -ItemType Directory -Path $coreModulesManual -Force | Out-Null
+}
+
+Write-FooterBlock
+# -------------------- [Run any domain or machine specific actions] --------------------
+Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+$domainScript = "$coreFunctionsRoot/Start-SystemSetup-$($userDomain).ps1"
+$machineScript = "$coreFunctionsRoot/Start-SystemSetup-$($env:COMPUTERNAME).ps1"
+
+wi "Checking for $domainScript"
+if (Test-Path $domainScript) {
+    Write-HeadingBlock "Running $domainScript"
+    & $domainScript
+}
+
+wi "Checking for $machineScript"
+if (Test-Path $machineScript) {
+    Write-HeadingBlock "Running $machineScript"
+    & $machineScript
+}
+
+Write-FooterBlock
+# -------------------- [Run any admin domain or machine specific actions] --------------------
+Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+$domainScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($userDomain).ps1"
+$machineScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($env:COMPUTERNAME).ps1"
+
+wi "Checking for $domainScriptAdmin"
+if (Test-Path $domainScriptAdmin) {
+    Write-HeadingBlock "Running $domainScriptAdmin"
+    gsudo & $domainScriptAdmin
+}
+
+wi "Checking for $machineScriptAdmin"
+if (Test-Path $machineScriptAdmin) {
+    Write-HeadingBlock "Running $machineScriptAdmin"
+    gsudo & $machineScriptAdmin
+}
+
+Write-FooterBlock
