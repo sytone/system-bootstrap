@@ -35,6 +35,10 @@ if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
     Write-Output "- Creating desktop shortcut."
 
     $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
+    if(Test-Path $linkPath) {
+        Write-Output "- Removing existing shortcut."
+        Remove-Item $linkPath
+    }
     $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
     $link.TargetPath = 'powershell'
     $link.Arguments = "-NoExit -NoProfile -Command `"iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex`""
