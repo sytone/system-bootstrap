@@ -11,7 +11,7 @@ Write-Output '- Creating system-bootstrap folder.'
 $bootstrapFolder = "$env:temp\system-bootstrap"
 New-Item -Path $bootstrapFolder -ItemType Directory -Force | Out-Null
 
-if(-not (Test-Path $bootstrapFolder)) {
+if (-not (Test-Path $bootstrapFolder)) {
     Write-Output "X Failed to create system-bootstrap folder '$bootstrapFolder'."
     return
 }
@@ -29,6 +29,16 @@ foreach ($file in $files) {
     $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
     Write-Output "- Downloading $file to $bootstrapFolder\$file"
     $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force
+}
+
+if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
+    Write-Output "- Creating desktop shortcut."
+
+    $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
+    $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
+    $link.TargetPath = 'powershell'
+    $link.Arguments = "-NoExit -NoProfile -Command `"iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex`""
+    $link.Save()
 }
 
 Write-Output "- Running $bootstrapFolder\Start-SystemBootstrap.ps1"

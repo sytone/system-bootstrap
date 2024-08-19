@@ -27,6 +27,12 @@ iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-Bootstrap
 
 To automatically run the setup without prompt set `$env:SYSTEM_AUTO_RUN_SETUP` to `'TRUE'` or `'Y'`
 
+### Desktop Shortcut
+
+By default a desktop shortcut is created so you can run this process again to update your system. A shortcut is created on the desktop the pulls the latest version and runs the bootstrap process again. The process is idempotent so safe to run as many times as you want. To disable the creation of the shortcut set an environment variable called `SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION`
+
+eg. `$env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION = 'TRUE'`
+
 ## Local Powershell Repository
 
 To make scripts a bit more portable, this uses a local PSRepository. The packages are all stored in `{onedrive work/personal}/localpsgallery` and published to that location or installed from that location. It is a simple way to manage your personal scripts and have history if you want.
