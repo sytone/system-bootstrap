@@ -298,14 +298,10 @@ Write-FooterBlock
 # -------------------- [Update Windows Terminal Configuration] --------------------
 Write-HeadingBlock 'Updating Windows Terminal Settings'
 
-$windowsTerminalSettingsPath = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsTerminalSettingsPath" -DefaultValue ''
+$windowsTerminalSettingsPath = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsTerminalSettingsPath" -DefaultValue '' -ExpandVariables
 if ($windowsTerminalSettingsPath -eq '') {
     wi 'No Windows Terminal settings path configured'
 } else {
-    if ($windowsTerminalSettingsPath.Contains("`$env:")) {
-        $windowsTerminalSettingsPath = Invoke-Expression -Command "`"$windowsTerminalSettingsPath`""
-    }
-
     # Even if the path is in the configuration, windows-teminal installed via scoop may not exist. So this will
     # skip if you are not using windows terminal via scoop.
     if ((Test-Path "$env:USERPROFILE\scoop\persist\windows-terminal")) {
@@ -343,16 +339,11 @@ Write-FooterBlock
 # -------------------- [Local PS Gallery] --------------------
 Write-HeadingBlock 'Setting up Local PS Gallery'
 
-$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' 
+$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' -ExpandVariables
 
 if ($localPsGallerySource -eq '') {
     wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
 } else {
-
-    if ($localPsGallerySource.Contains("`$env:")) {
-        $localPsGallerySource = Invoke-Expression -Command "`"$localPsGallerySource`""
-    }
-
     # Check for the management scripts
     $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
     $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
