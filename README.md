@@ -21,18 +21,41 @@ $env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveCommercial\scripts\systemconfigu
 iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex
 ```
 
-## Options
+## Configuration
+
+The configuration for this uses the PowerShell module SimpleSettings. Data is stored as a json file and there is an example in this repo to look at.
+
+### Configuring Scoop Config
+
+To specify any scoop configuration you can use the command below to set a value, this will be checked and updated prior to any scoop application installation or update. Update as needed for your environment.
+
+```PowerShell
+Set-SimpleSetting -Section 'SystemSetup' -Name 'ScoopConfiguration' -DefaultValue @{
+    "aria2-enabled" = "FALSE"
+    "use_lessmsi" = "TRUE"
+    "use_sqlite_cache" = "TRUE"
+}
+```
+
+## Bootstrap Options
 
 ### Auto Run Start-SystemSetup
 
 To automatically run the setup without prompt set `$env:SYSTEM_AUTO_RUN_SETUP` to `'TRUE'` or `'Y'`
 
+```PowerShell
+[System.Environment]::SetEnvironmentVariable('SYSTEM_AUTO_RUN_SETUP', "TRUE", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_AUTO_RUN_SETUP = "TRUE"
+```
+
 ### Desktop Shortcut
 
 By default a desktop shortcut is created so you can run this process again to update your system. A shortcut is created on the desktop the pulls the latest version and runs the bootstrap process again. The process is idempotent so safe to run as many times as you want. To disable the creation of the shortcut set an environment variable called `SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION`
 
-eg. `$env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION = 'TRUE'`
-
+```PowerShell
+[System.Environment]::SetEnvironmentVariable('SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION', "TRUE", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION = "TRUE"
+```
 ## Local Powershell Repository
 
 To make scripts a bit more portable, this uses a local PSRepository. The packages are all stored in `{onedrive work/personal}/localpsgallery` and published to that location or installed from that location. It is a simple way to manage your personal scripts and have history if you want.

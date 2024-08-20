@@ -168,6 +168,27 @@ if ($DomainOverride -ne '') {
 wi "Computer Domain: $userDomain"
 
 Write-FooterBlock
+# ------------------------------------------ [Configure SCOOP] ------------------------------------------
+Write-HeadingBlock -Message 'Configure SCOOP'
+$scoopConfiguration = Get-SimpleSetting -Section 'SystemSetup' -Name 'ScoopConfiguration' -DefaultValue @{}
+
+foreach ($config in $scoopConfiguration.PSObject.Properties) {
+    if($config.Value -eq 'TRUE' -or $config.Value -eq '1' -or $config.Value -eq $true) {
+        $config.Value = $true
+    } else {
+        $config.Value = $false
+    }
+
+    if((scoop config $($config.Name)) -eq $config.Value) {
+        wi "Skipping scoop configuration '$($config.Name)' as it is already set to '$($config.Value)'"
+        continue
+    }
+
+    wi "Setting scoop configuration '$($config.Name)' to '$($config.Value)'"
+    scoop config $($config.Name) $config.Value
+}
+
+Write-FooterBlock
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
@@ -221,8 +242,6 @@ $Script:machineScoopApps = Get-SimpleSetting -Section 'SystemSetup' -Name "$($en
 $Script:domainScoopApps = Get-SimpleSetting -Section 'SystemSetup' -Name "$($userDomain)ScoopApps" -DefaultValue @()
 
 Install-ScoopApp -Name 'aria2'
-scoop config aria2-enabled false *> $null
-scoop config use_lessmsi true *> $null
 
 foreach ($app in $Script:defaultScoopApps) {
     Install-ScoopApp -Name $app

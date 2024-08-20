@@ -90,6 +90,19 @@
     "DefaultWinGetApps": [
       "Microsoft.PowerToys"
     ],    
-    "alias@domain.com-MappedDomain": "DOMAINNAME"
+    "alias@domain.com-MappedDomain": "DOMAINNAME",
+    "npmPackagesToSkipProfileFor": [
+      "packagename1",
+      "packagename2"
+    ],
+    "processNamesToSkipProfileFor": [
+      "processname1",
+      "processname2"
+    ],
+    "ScoopConfiguration": {
+      "use_sqlite_cache": "TRUE",
+      "use_lessmsi": "TRUE",
+      "aria2-enabled": "FALSE"
+    }
   }
 }
