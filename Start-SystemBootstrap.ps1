@@ -67,10 +67,13 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
     ww 'Cannot find git in scoop, installing.'
     scoop install git
 } else {
-    wi "Git is installed."
+    wi 'Git is installed.'
+    scoop update git
 }
 
+# Setup the manager for global and system.
 git config --global credential.helper manager
+git config --system credential.helper "!`"$((scoop info git -v).Installed.Replace("\","/"))/mingw64/bin/git-credential-manager.exe`""
 
 # ------------------------------------------ [Add SCOOP Buckets] ------------------------------------------
 Write-HeadingBlock -Message 'Add SCOOP Buckets'
