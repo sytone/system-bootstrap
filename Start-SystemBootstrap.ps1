@@ -67,9 +67,8 @@ if ($null -eq $scoopOk) {
 }
 else {
     wi 'Scoop installed.'
+    scoop update *> $null
 }
-
-$scoopConfiguration = (scoop export | ConvertFrom-Json)
 
 # ------------------------------------------ [Check for GIT] -----------------------------------------
 # Minial footprint on start, just make sure git is around and any other scoop dependcies it has.
@@ -79,7 +78,10 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
     scoop install git
 } else {
     wi 'Git is installed.'
-    scoop update git
+    if(((scoop status) | ? {$_.Name -eq 'git'})) { 
+        wi "Updating GIT to: '$(((scoop status) | ? {$_.Name -eq 'git'}).'Latest Version')'"
+        scoop update git
+    }
 }
 
 # Setup the manager for global and system.
@@ -110,8 +112,6 @@ if (-not (scoop bucket list).Name -contains 'extras') {
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
-scoop status *> $null
-$scoopConfiguration = (scoop export | ConvertFrom-Json)
 wi "Scoop updated."
 
 # ------------------------------------------ [Check for gsudo] -----------------------------------------
@@ -121,6 +121,10 @@ if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
     scoop install gsudo
 } else {
     wi "gsudo is installed."
+    if(((scoop status) | ? {$_.Name -eq 'gsudo'})) { 
+        wi "Updating gsudo to: '$(((scoop status) | ? {$_.Name -eq 'gsudo'}).'Latest Version')'"
+        scoop update gsudo
+    }    
 }
 
 # ---------------------------------- [Check for PowerShell Core 7+] ----------------------------------
@@ -133,10 +137,19 @@ if ($runningInPowerShell) {
         wi 'Waiting for all PowerSehll Core processes to stop...'
         Start-Sleep -Seconds 5
     }
-    scoop install pwsh
-    scoop update pwsh
+    if ($null -eq (Get-ScoopApp -Name 'pwsh')) {
+        ww 'Cannot find pwsh in scoop, installing.'
+        scoop install pwsh
+    } else {
+        wi "pwsh is installed."
+        if(((scoop status) | ? {$_.Name -eq 'pwsh'})) { 
+            wi "Updating pwsh to: '$(((scoop status) | ? {$_.Name -eq 'pwsh'}).'Latest Version')'"
+            scoop update pwsh
+        }    
+    }    
 } else {
     ww "You are running this in PowerShell Core (pwsh) please run this in Windows Powershell so PowerShell Core can be installed."
+    exit 1
 } 
 
 
