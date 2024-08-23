@@ -259,7 +259,7 @@ Write-FooterBlock
 # ---------------------------------- [ Update SCOOP applications ] ----------------------------------
 Write-HeadingBlock -Message 'Update SCOOP applications'
 
-$appStatus = scoop status
+$appStatus = scoop status --local
 $appStatus | ForEach-Object {
     wi "Updating $($_.Name) to $($_.'Latest Version') from $($_.'Installed Version')"
     scoop update $_.Name

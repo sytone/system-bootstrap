@@ -21,20 +21,13 @@ function Get-ScoopApp($Name) {
     return $scoopConfiguration.apps | Where-Object { $_.Name -eq $Name }
 }
 
-function Install-ScoopApp($Name, [switch]$Sudo) {
-    wi "Checking '$Name'"
-    $currentFG = $Host.UI.RawUI.ForegroundColor
-    $currentBG = $Host.UI.RawUI.BackgroundColor
-    $appInstalled = $null -ne (Get-ScoopApp $Name)
-    if (!$appInstalled) {
-        scoop install $Name
-    }
-    elseif ($Name -in $updates.Keys) {
+function Update-ScoopApp($Name) {
+    if (($scoopStatus | Where-Object { $_.Name -eq $Name })) { 
+        wi "Updating $Name to: '$(($scoopStatus | Where-Object {$_.Name -eq $Name}).'Latest Version')'"
         scoop update $Name
     }
-    $Host.UI.RawUI.ForegroundColor = $currentFG
-    $Host.UI.RawUI.BackgroundColor = $currentBG
 }
+
 
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
@@ -51,7 +44,7 @@ wi "Starting minimal boostrap to get the system to a point where full installati
 
 $currentExecutionPolicy = Get-ExecutionPolicy
 
-if($currentExecutionPolicy -ne 'Unrestricted') {
+if ($currentExecutionPolicy -ne 'Unrestricted') {
     ww "Please set execution policy to 'Unrestricted' in a admin instance of PowerShell, it is currently set to '$currentExecutionPolicy'."
     ww "Set-ExecutionPolicy -ExecutionPolicy Unrestricted"
 }
@@ -64,8 +57,7 @@ $scoopOk = Get-Command -Name scoop -ErrorAction SilentlyContinue
 if ($null -eq $scoopOk) {
     ww 'Installing Scoop'
     Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
-}
-else {
+} else {
     wi 'Scoop installed.'
     scoop update *> $null
 }
@@ -81,10 +73,7 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
     scoop install git
 } else {
     wi 'Git is installed.'
-    if(($scoopStatus | ? {$_.Name -eq 'git'})) { 
-        wi "Updating GIT to: '$(($scoopStatus | ? {$_.Name -eq 'git'}).'Latest Version')'"
-        scoop update git
-    }
+    Update-ScoopApp -Name 'git'
 }
 
 # Setup the manager for global and system.
@@ -94,9 +83,9 @@ git config --system credential.helper "!`"$((scoop info git -v).Installed.Replac
 # ------------------------------------------ [Add SCOOP Buckets] ------------------------------------------
 Write-HeadingBlock -Message 'Add SCOOP Buckets'
 
-if((Get-Command 'git' -ErrorAction SilentlyContinue)) {
-    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/extras".Replace('\','/')
-    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/main".Replace('\','/')
+if ((Get-Command 'git' -ErrorAction SilentlyContinue)) {
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/extras".Replace('\', '/')
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/main".Replace('\', '/')
 }
 
 if (-not (scoop bucket list).Name -contains 'main') {
@@ -126,10 +115,7 @@ if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
     scoop install gsudo
 } else {
     wi "gsudo is installed."
-    if(($scoopStatus | ? {$_.Name -eq 'gsudo'})) { 
-        wi "Updating gsudo to: '$(($scoopStatus | ? {$_.Name -eq 'gsudo'}).'Latest Version')'"
-        scoop update gsudo
-    }    
+    Update-ScoopApp -Name 'gsudo'
 }
 
 # ---------------------------------- [Check for PowerShell Core 7+] ----------------------------------
@@ -147,10 +133,7 @@ if ($runningInPowerShell) {
         scoop install pwsh
     } else {
         wi "pwsh is installed."
-        if(($scoopStatus | ? {$_.Name -eq 'pwsh'})) { 
-            wi "Updating pwsh to: '$(($scoopStatus | ? {$_.Name -eq 'pwsh'}).'Latest Version')'"
-            scoop update pwsh
-        }    
+        Update-ScoopApp -Name 'pwsh' 
     }    
 } else {
     ww "You are running this in PowerShell Core (pwsh) please run this in Windows Powershell so PowerShell Core can be installed."
@@ -162,12 +145,12 @@ if ($runningInPowerShell) {
 Write-HeadingBlock -Message 'Check for WinGet'
 
 wi 'Checking for Nuget Package Provider'
-if($null -eq (Get-PackageProvider -Name Nuget)) {
+if ($null -eq (Get-PackageProvider -Name Nuget)) {
     Install-PackageProvider -Name NuGet -Scope CurrentUser -Force
 }
 
 wi "Checking the PSGallery is Trusted"
-if((Get-PSRepository -Name PSGallery).InstallationPolicy -ne 'Trusted') {
+if ((Get-PSRepository -Name PSGallery).InstallationPolicy -ne 'Trusted') {
     Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
 }
 
@@ -218,23 +201,23 @@ wi " "
 wi "Start-SystemBootstrap Completed"
 
 $validAutoRunValues = @{
-    'Y' = $true
-    'YES' = $true
+    'Y'    = $true
+    'YES'  = $true
     'TRUE' = $true
-    1 = $true
+    1      = $true
 }
 
-if($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+if ($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
     $runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
 } else {
-    if($validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+    if ($validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
         $runNextStep = 'Y'
     } else {
         $runNextStep = 'N'
     }
 }
 
-if($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
+if ($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
     & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "$PSScriptRoot\Start-SystemSetup.ps1"
 }
 
