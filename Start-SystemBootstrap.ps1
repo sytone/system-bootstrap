@@ -13,8 +13,8 @@ function ww($message) {
 }
 
 function Write-HeadingBlock($Message) {
-    Write-Host ""
-    Write-Host "--- [$Message] ---"
+    Write-Host "[$(Get-Date -Format 'yyyyMMdd-hhmmss')][INF] "
+    Write-Host "[$(Get-Date -Format 'yyyyMMdd-hhmmss')][INF] --- [$Message] ---"
 }
 
 function Get-ScoopApp($Name) {
