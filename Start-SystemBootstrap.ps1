@@ -71,6 +71,7 @@ else {
 }
 
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
+$scoopStatus = (scoop status --local)
 
 # ------------------------------------------ [Check for GIT] -----------------------------------------
 # Minial footprint on start, just make sure git is around and any other scoop dependcies it has.
@@ -80,8 +81,8 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
     scoop install git
 } else {
     wi 'Git is installed.'
-    if(((scoop status) | ? {$_.Name -eq 'git'})) { 
-        wi "Updating GIT to: '$(((scoop status) | ? {$_.Name -eq 'git'}).'Latest Version')'"
+    if(($scoopStatus | ? {$_.Name -eq 'git'})) { 
+        wi "Updating GIT to: '$(($scoopStatus | ? {$_.Name -eq 'git'}).'Latest Version')'"
         scoop update git
     }
 }
@@ -115,6 +116,7 @@ if (-not (scoop bucket list).Name -contains 'extras') {
 Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
 $scoopConfiguration = (scoop export | ConvertFrom-Json)
+$scoopStatus = (scoop status --local)
 wi "Scoop updated."
 
 # ------------------------------------------ [Check for gsudo] -----------------------------------------
@@ -124,8 +126,8 @@ if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
     scoop install gsudo
 } else {
     wi "gsudo is installed."
-    if(((scoop status) | ? {$_.Name -eq 'gsudo'})) { 
-        wi "Updating gsudo to: '$(((scoop status) | ? {$_.Name -eq 'gsudo'}).'Latest Version')'"
+    if(($scoopStatus | ? {$_.Name -eq 'gsudo'})) { 
+        wi "Updating gsudo to: '$(($scoopStatus | ? {$_.Name -eq 'gsudo'}).'Latest Version')'"
         scoop update gsudo
     }    
 }
@@ -145,8 +147,8 @@ if ($runningInPowerShell) {
         scoop install pwsh
     } else {
         wi "pwsh is installed."
-        if(((scoop status) | ? {$_.Name -eq 'pwsh'})) { 
-            wi "Updating pwsh to: '$(((scoop status) | ? {$_.Name -eq 'pwsh'}).'Latest Version')'"
+        if(($scoopStatus | ? {$_.Name -eq 'pwsh'})) { 
+            wi "Updating pwsh to: '$(($scoopStatus | ? {$_.Name -eq 'pwsh'}).'Latest Version')'"
             scoop update pwsh
         }    
     }    
