@@ -36,6 +36,17 @@ function Install-ScoopApp($Name, [switch]$Sudo) {
     $Host.UI.RawUI.BackgroundColor = $currentBG
 }
 
+#
+# ---------------------------------- [Log Environment Configuration] ---------------------------------
+#
+Write-HeadingBlock -Message 'Environment Configuration Used'
+
+wi "       SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
+wi "     SYSTEM_AUTO_RUN_SETUP: '$env:SYSTEM_AUTO_RUN_SETUP'"
+wi "SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
+wi "               USERPROFILE: '$env:USERPROFILE'"
+wi ""
+
 wi "Starting minimal boostrap to get the system to a point where full installation scripts can run."
 
 $currentExecutionPolicy = Get-ExecutionPolicy
