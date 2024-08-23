@@ -70,6 +70,8 @@ else {
     scoop update *> $null
 }
 
+$scoopConfiguration = (scoop export | ConvertFrom-Json)
+
 # ------------------------------------------ [Check for GIT] -----------------------------------------
 # Minial footprint on start, just make sure git is around and any other scoop dependcies it has.
 Write-HeadingBlock -Message 'Check for GIT'
@@ -112,6 +114,7 @@ if (-not (scoop bucket list).Name -contains 'extras') {
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
 Write-HeadingBlock -Message 'Update SCOOP'
 scoop update *> $null
+$scoopConfiguration = (scoop export | ConvertFrom-Json)
 wi "Scoop updated."
 
 # ------------------------------------------ [Check for gsudo] -----------------------------------------
