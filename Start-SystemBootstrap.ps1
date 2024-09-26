@@ -28,6 +28,13 @@ function Update-ScoopApp($Name) {
     }
 }
 
+$trueValues = @{
+    'Y'    = $true
+    'YES'  = $true
+    'TRUE' = $true
+    1      = $true
+}
+
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
 #
@@ -168,14 +175,7 @@ wi "Installing WinGet modules if missing and validating winget is OK."
 # ------------------------------------------ [Base System DSC] -----------------------------------------
 Write-HeadingBlock -Message 'Configure Base System DSC'
 
-$validSkipWinGetDscValues = @{
-    'Y'    = $true
-    'YES'  = $true
-    'TRUE' = $true
-    1      = $true
-}
-
-if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $validSkipWinGetDscValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
+if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $trueValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
     wi "Running Base DSC"
     $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
     gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
@@ -212,17 +212,10 @@ wi " "
 wi " "
 wi "Start-SystemBootstrap Completed"
 
-$validAutoRunValues = @{
-    'Y'    = $true
-    'YES'  = $true
-    'TRUE' = $true
-    1      = $true
-}
-
-if ($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+if ($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $trueValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
     $runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
 } else {
-    if ($validAutoRunValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+    if ($trueValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
         $runNextStep = 'Y'
     } else {
         $runNextStep = 'N'
