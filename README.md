@@ -48,6 +48,15 @@ To automatically run the setup without prompt set `$env:SYSTEM_AUTO_RUN_SETUP` t
 $env:SYSTEM_AUTO_RUN_SETUP = "TRUE"
 ```
 
+### Skip the WinGet DSC
+
+To skip the WinGet DSC running on bootstrap `$env:SYSTEM_SKIP_WINGET_DSC` to `'TRUE'` or `'Y'`
+
+```PowerShell
+[System.Environment]::SetEnvironmentVariable('SYSTEM_SKIP_WINGET_DSC', "TRUE", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_SKIP_WINGET_DSC = "TRUE"
+```
+
 ### Desktop Shortcut
 
 By default a desktop shortcut is created so you can run this process again to update your system. A shortcut is created on the desktop the pulls the latest version and runs the bootstrap process again. The process is idempotent so safe to run as many times as you want. To disable the creation of the shortcut set an environment variable called `SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION`
