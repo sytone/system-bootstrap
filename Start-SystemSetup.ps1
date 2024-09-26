@@ -56,6 +56,14 @@ $trueValues = @{
     1      = $true
 }
 
+# Nothing but my profile setup is allowed...
+# Customization is in local profile scripts.
+$envLoadLine = "`n. `$env:USERPROFILE\Scripts\powershell\defaultprofile.ps1`n"
+if ((Test-Path $profile) -eq $false) {
+    New-Item $profile -Type File  -Force -ErrorAction 0 | Out-Null
+}
+$envLoadLine | Set-Content ($profile)
+
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
 #
