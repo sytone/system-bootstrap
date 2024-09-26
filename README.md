@@ -1,12 +1,12 @@
 # system-bootstrap
 
-The following environment variables need to be set to provide the path to the configuration used in bootstrap and your scripts root. If you are using OneDrive for this you can use the commands below.
+The following environment variables need to be set to provide the path to the configuration used in bootstrap and your scripts root. Example commands are below.
 
 ```PowerShell
 
 function senv($name, $value) {
-    [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::User)
-    New-Item -Path Env:\$name -Value $value -Force
+    [System.Environment]::SetEnvironmentVariable($name, $value, "User")
+    [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
 }
 
 # Consumer
@@ -18,16 +18,14 @@ senv 'SYSTEM_SCRIPTS_ROOT' "$env:OneDriveCommercial\scripts"
 senv 'SIMPLESETTINGS_CONFIG_FILE' "$env:SYSTEM_SCRIPTS_ROOT\systemconfiguration.json"
 
 # External GIT repo
-# Note: configuration is always pulled from the root of the git clone.
-# Scripts root is set to "$env:USERPROFILE\scriptsrepo" by default.
 senv 'SYSTEM_GIT_ENABLED' 'TRUE'
 senv 'SYSTEM_GIT_REPO' "https://github.com/name/scripts"
 senv 'SYSTEM_SCRIPTS_ROOT' "$env:USERPROFILE\scriptsrepo"
 senv 'SIMPLESETTINGS_CONFIG_FILE' "$env:SYSTEM_SCRIPTS_ROOT\systemconfiguration.json"
 
-```
+senv 'SYSTEM_SKIP_WINGET_DSC' "TRUE"
+senv 'SYSTEM_AUTO_RUN_SETUP' "TRUE"
 
-```PowerShell
 iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex
 ```
 
