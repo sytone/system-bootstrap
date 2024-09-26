@@ -411,23 +411,24 @@ $updateHelpJob = Start-Job -ScriptBlock { Update-Help -Scope CurrentUser }
 Write-FooterBlock
 # -------------------- [Local PS Gallery] --------------------
 Write-HeadingBlock 'Setting up Local PS Gallery'
+if ($trueValues.ContainsKey($($env:SYSTEM_USE_LOCAL_PSGALLERY).ToUpper())) {
+    $localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' -ExpandVariables
 
-$localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' -ExpandVariables
-
-if ($localPsGallerySource -eq '') {
-    wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
-} else {
-    # Check for the management scripts
-    $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
-    $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
-
-    if ($registerScript -and $installScript) {
-        wi "Running Register-LocalPSRepository.ps1"
-        & "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
-        wi "Running Install-AllLocalScripts.ps1"
-        & "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+    if ($localPsGallerySource -eq '') {
+        wi "Unable get local PS Gallery Source root. Skipping local PS Gallery setup."
     } else {
-        wi "Unable to find management scripts in $localPsGallerySource. Skipping local PS Gallery setup."
+        # Check for the management scripts
+        $registerScript = Test-Path -Path "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+        $installScript = Test-Path -Path "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+
+        if ($registerScript -and $installScript) {
+            wi "Running Register-LocalPSRepository.ps1"
+            & "$localPsGallerySource\management\Register-LocalPSRepository.ps1"
+            wi "Running Install-AllLocalScripts.ps1"
+            & "$localPsGallerySource\management\Install-AllLocalScripts.ps1"
+        } else {
+            wi "Unable to find management scripts in $localPsGallerySource. Skipping local PS Gallery setup."
+        }
     }
 }
 
