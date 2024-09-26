@@ -153,7 +153,7 @@ Write-HeadingBlock -Message 'Check for WinGet'
 
 wi 'Checking for Nuget Package Provider'
 if ($null -eq (Get-PackageProvider -Name Nuget)) {
-    Install-PackageProvider -Name NuGet -Scope CurrentUser -Force -ForceBootstrap
+    Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -Confirm:$false
 }
 
 wi "Checking the PSGallery is Trusted"
