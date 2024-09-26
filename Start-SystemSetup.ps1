@@ -339,17 +339,17 @@ $domainWinGetApps = Get-SimpleSetting -Section 'SystemSetup' -Name "$($userDomai
 
 foreach ($app in $defaultWinGetApps) {
     wi "Installing Default WinGet package: $app"
-    winget --accept-source-agreements --accept-package-agreements install $app 
+    winget install $app --accept-source-agreements --accept-package-agreements
 }
 
 foreach ($app in $machineWinGetApps) {
     wi "Installing Machine WinGet package: $app"
-    winget --accept-source-agreements --accept-package-agreements install $app 
+    winget install $app --accept-source-agreements --accept-package-agreements
 }
 
 foreach ($app in $domainWinGetApps) {
     wi "Installing Domain WinGet package: $app"
-    winget --accept-source-agreements --accept-package-agreements install $app 
+    winget install $app --accept-source-agreements --accept-package-agreements
 }
 
 Write-FooterBlock
