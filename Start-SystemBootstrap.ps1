@@ -28,16 +28,16 @@ function Update-ScoopApp($Name) {
     }
 }
 
-
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
 #
 Write-HeadingBlock -Message 'Environment Configuration Used'
 
-wi "       SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
-wi "     SYSTEM_AUTO_RUN_SETUP: '$env:SYSTEM_AUTO_RUN_SETUP'"
-wi "SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
-wi "               USERPROFILE: '$env:USERPROFILE'"
+wi "        SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
+wi "      SYSTEM_AUTO_RUN_SETUP: '$env:SYSTEM_AUTO_RUN_SETUP'"
+wi "     SYSTEM_SKIP_WINGET_DSC: '$env:SYSTEM_SKIP_WINGET_DSC'"
+wi " SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
+wi "                USERPROFILE: '$env:USERPROFILE'"
 wi ""
 
 wi "Starting minimal boostrap to get the system to a point where full installation scripts can run."
@@ -157,7 +157,7 @@ if ((Get-PSRepository -Name PSGallery).InstallationPolicy -ne 'Trusted') {
 $pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
 $pwsh7Exe = $pwsh7Cmd.Path
 
-wi "Installing Winget modules if missing and validating winget is OK."
+wi "Installing WinGet modules if missing and validating winget is OK."
 
 # Everything is expected to run in powershell core, if you are using the deskop more then this will not be
 # a good experience.

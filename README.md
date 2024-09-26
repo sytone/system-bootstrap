@@ -3,17 +3,27 @@
 The following environment variables need to be set to provide the path to the configuration used in bootstrap and your scripts root. If you are using OneDrive for this you can use the commands below.
 
 ```PowerShell
+
+function senv($name, $value) {
+    [System.Environment]::SetEnvironmentVariable($name, $value, [System.EnvironmentVariableTarget]::User)
+    New-Item -Path Env:\$name -Value $value -Force
+}
+
 # Consumer
-[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$env:OneDriveConsumer\scripts", [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', "$env:OneDriveConsumer\scripts\systemconfiguration.json", [System.EnvironmentVariableTarget]::User)
-$env:SYSTEM_SCRIPTS_ROOT = "$env:OneDriveConsumer\scripts"
-$env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveConsumer\scripts\systemconfiguration.json"
+senv 'SYSTEM_SCRIPTS_ROOT' "$env:OneDriveConsumer\scripts"
+senv 'SIMPLESETTINGS_CONFIG_FILE' "$env:SYSTEM_SCRIPTS_ROOT\systemconfiguration.json"
 
 # Work or School
-[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$env:OneDriveCommercial\scripts", [System.EnvironmentVariableTarget]::User)
-[System.Environment]::SetEnvironmentVariable('SIMPLESETTINGS_CONFIG_FILE', "$env:OneDriveCommercial\scripts\systemconfiguration.json", [System.EnvironmentVariableTarget]::User)
-$env:SYSTEM_SCRIPTS_ROOT = "$env:OneDriveCommercial\scripts"
-$env:SIMPLESETTINGS_CONFIG_FILE = "$env:OneDriveCommercial\scripts\systemconfiguration.json"
+senv 'SYSTEM_SCRIPTS_ROOT' "$env:OneDriveCommercial\scripts"
+senv 'SIMPLESETTINGS_CONFIG_FILE' "$env:SYSTEM_SCRIPTS_ROOT\systemconfiguration.json"
+
+# External GIT repo
+# Note: configuration is always pulled from the root of the git clone.
+# Scripts root is set to "$env:USERPROFILE\scriptsrepo" by default.
+senv 'SYSTEM_GIT_ENABLED' 'TRUE'
+senv 'SYSTEM_GIT_REPO' "https://github.com/name/scripts"
+senv 'SYSTEM_SCRIPTS_ROOT' "$env:USERPROFILE\scriptsrepo"
+senv 'SIMPLESETTINGS_CONFIG_FILE' "$env:SYSTEM_SCRIPTS_ROOT\systemconfiguration.json"
 
 ```
 

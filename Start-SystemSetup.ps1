@@ -49,12 +49,39 @@ function Write-FooterBlock() {
     Write-InfoLog -Message ""
 }
 
+$trueValues = @{
+    'Y'    = $true
+    'YES'  = $true
+    'TRUE' = $true
+    1      = $true
+}
+
 #
 # ---------------------------------- [Log Environment Configuration] ---------------------------------
 #
 Write-HeadingBlock -Message 'Environment Configuration Used'
 
+# If GIT is enabled we pull out the URL and set the root to the repo under the user profile.
+if ($trueValues.ContainsKey($($env:SYSTEM_GIT_ENABLED).ToUpper())) {
+    $env:SYSTEM_GIT_ENABLED = $true
+
+    if ($env:SYSTEM_GIT_REPO -eq '') {
+        ww 'GIT is enabled but no repo is set. Aborting.'
+        ww "See the README.md files for information on setting this."
+        return        
+    }   
+}
+
+if ($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
+    ww "Unable get system scripts root."
+    ww "Please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
+    ww "See the README.md files for information on setting this."
+
+    return
+}
+
 wi "       SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
+wi "        SYSTEM_GIT_ENABLED: '$env:SYSTEM_GIT_ENABLED'"
 wi "SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
 wi "               USERPROFILE: '$env:USERPROFILE'"
 wi "          OneDriveConsumer: '$env:OneDriveConsumer'"
@@ -64,6 +91,28 @@ wi "                USERDOMAIN: '$env:USERDOMAIN'"
 wi " USERDOMAIN_ROAMINGPROFILE: '$env:USERDOMAIN_ROAMINGPROFILE'"
 wi ""
 
+Write-FooterBlock
+#
+# ---------------------------------- [GIT Pre Setup] ---------------------------------
+#
+Write-HeadingBlock -Message 'Running GIT Pre Setup'
+
+if ($env:SYSTEM_GIT_ENABLED) {
+    wi "GIT is enabled, setting up GIT"
+    if (-not (Test-Path $env:SYSTEM_SCRIPTS_ROOT)) {
+        wi "Cloning $($env:SYSTEM_GIT_REPO) into $($env:SYSTEM_SCRIPTS_ROOT)"
+        git clone $env:SYSTEM_GIT_REPO $env:SYSTEM_SCRIPTS_ROOT
+    } else {
+        wi "Pulling latest from $($env:SYSTEM_GIT_REPO) into $($env:SYSTEM_SCRIPTS_ROOT)"
+        Push-Location $env:SYSTEM_SCRIPTS_ROOT
+        git pull
+        Pop-Location
+    }
+} else {
+    wi "GIT is not enabled, skipping GIT setup"
+}
+
+Write-FooterBlock
 #
 # ---------------------------------- [Start Main System Setup] ---------------------------------
 #
@@ -89,14 +138,6 @@ Write-FooterBlock
 # ---------------------------------- [Create Scripts Junction Point] ---------------------------------
 #
 Write-HeadingBlock -Message 'Create Scripts Junction Point'
-
-if ($null -eq $env:SYSTEM_SCRIPTS_ROOT -or $env:SYSTEM_SCRIPTS_ROOT -eq '') {
-    ww "Unable get system scripts root."
-    ww "Please set `$env:SYSTEM_SCRIPTS_ROOT to the root of your scripts folder"
-    ww "See the readme.md files for information on setting this."
-
-    return
-}
 
 if (-not (Test-Path "$env:USERPROFILE\Scripts")) {
     wi "Creating the '$env:USERPROFILE\Scripts' junction"
@@ -124,22 +165,27 @@ Write-FooterBlock
 # --------------------------------------- [Make Scripts Offline] ---------------------------------------
 Write-HeadingBlock -Message 'Make Scripts Offline in OneDrive'
 
-if ($null -eq (Get-Command -Name attrib -ErrorAction SilentlyContinue)) {
-    $env:Path += ';C:\Windows\System32'
-}
+if ($env:SYSTEM_GIT_ENABLED) {
+    wi "GIT is enabled, skipping OneDrive offline setup"
+} else {
 
-if ($env:OneDriveConsumer) {
-    wi "Setting Offline for Onedrive Personal"
-    $attribResult = attrib -U +P "$env:OneDriveConsumer\scripts\*" /S /D
-    $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\PowerShell\*" /S /D
-    $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\WindowsPowerShell\*" /S /D
-}
+    if ($null -eq (Get-Command -Name attrib -ErrorAction SilentlyContinue)) {
+        $env:Path += ';C:\Windows\System32'
+    }
 
-if ($env:OneDriveCommercial) {
-    wi "Setting Offline for Onedrive for Work or School"
-    $attribResult = attrib -U +P "$env:OneDriveCommercial\scripts\*" /S /D
-    $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\PowerShell\*" /S /D
-    $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\WindowsPowerShell\*" /S /D
+    if ($env:OneDriveConsumer) {
+        wi "Setting Offline for Onedrive Personal"
+        $attribResult = attrib -U +P "$env:OneDriveConsumer\scripts\*" /S /D
+        $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\PowerShell\*" /S /D
+        $attribResult = attrib -U +P "$env:OneDriveConsumer\Documents\WindowsPowerShell\*" /S /D
+    }
+
+    if ($env:OneDriveCommercial) {
+        wi "Setting Offline for Onedrive for Work or School"
+        $attribResult = attrib -U +P "$env:OneDriveCommercial\scripts\*" /S /D
+        $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\PowerShell\*" /S /D
+        $attribResult = attrib -U +P "$env:OneDriveCommercial\Documents\WindowsPowerShell\*" /S /D
+    }
 }
 
 Write-FooterBlock
@@ -173,13 +219,13 @@ Write-HeadingBlock -Message 'Configure SCOOP'
 $scoopConfiguration = Get-SimpleSetting -Section 'SystemSetup' -Name 'ScoopConfiguration' -DefaultValue @{}
 
 foreach ($config in $scoopConfiguration.PSObject.Properties) {
-    if($config.Value -eq 'TRUE' -or $config.Value -eq '1' -or $config.Value -eq $true) {
+    if ($config.Value -eq 'TRUE' -or $config.Value -eq '1' -or $config.Value -eq $true) {
         $config.Value = $true
     } else {
         $config.Value = $false
     }
 
-    if((scoop config $($config.Name)) -eq $config.Value) {
+    if ((scoop config $($config.Name)) -eq $config.Value) {
         wi "Skipping scoop configuration '$($config.Name)' as it is already set to '$($config.Value)'"
         continue
     }
