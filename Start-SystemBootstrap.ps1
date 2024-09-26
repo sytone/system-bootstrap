@@ -168,8 +168,20 @@ wi "Installing Winget modules if missing and validating winget is OK."
 # ------------------------------------------ [Base System DSC] -----------------------------------------
 Write-HeadingBlock -Message 'Configure Base System DSC'
 
-$baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
-gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
+$validSkipWinGetDscValues = @{
+    'Y'    = $true
+    'YES'  = $true
+    'TRUE' = $true
+    1      = $true
+}
+
+if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $validSkipWinGetDscValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
+    wi "Running Base DSC"
+    $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
+    gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
+} else {
+    wi "Skipped running Base DSC"
+}
 
 # ---------------------------------------- [Check for Required Modules] -----------------------------------------
 # Minial set of modules to make life easier. All in PowerShell Core.
