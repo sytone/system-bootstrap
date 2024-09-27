@@ -70,7 +70,7 @@ $envLoadLine | Set-Content ($profile)
 Write-HeadingBlock -Message 'Environment Configuration Used'
 
 # If GIT is enabled we pull out the URL and set the root to the repo under the user profile.
-if ($trueValues.ContainsKey($($env:SYSTEM_GIT_ENABLED).ToUpper())) {
+if ($null -ne $env:SYSTEM_GIT_ENABLED -and $trueValues.ContainsKey($($env:SYSTEM_GIT_ENABLED).ToUpper())) {
     $env:SYSTEM_GIT_ENABLED = $true
 
     if ($env:SYSTEM_GIT_REPO -eq '') {
@@ -133,7 +133,7 @@ if ((Test-Path -Path $settings)) {
     if ($null -eq $currentSettings -or $currentSettings -eq @{} -or ($currentSettings | ConvertTo-Json -Depth 10) -eq '{}') {
         ww "Unable to load settings file: $settings"
         ww "The file is invalid or empty, please set `$env:SIMPLESETTINGS_CONFIG_FILE to a valid configuration file."
-        ww "See the readme.md files for information on setting this."
+        ww "See the README.md files for information on setting this."
         return
     }
 } else {
@@ -411,7 +411,7 @@ $updateHelpJob = Start-Job -ScriptBlock { Update-Help -Scope CurrentUser }
 Write-FooterBlock
 # -------------------- [Local PS Gallery] --------------------
 Write-HeadingBlock 'Setting up Local PS Gallery'
-if ($trueValues.ContainsKey($($env:SYSTEM_USE_LOCAL_PSGALLERY).ToUpper())) {
+if ($null -ne $env:SYSTEM_USE_LOCAL_PSGALLERY -and $trueValues.ContainsKey($($env:SYSTEM_USE_LOCAL_PSGALLERY).ToUpper())) {
     $localPsGallerySource = Get-SimpleSetting -Section 'SystemSetup' -Name "localPSGallerySourcePath" -DefaultValue '' -ExpandVariables
 
     if ($localPsGallerySource -eq '') {
