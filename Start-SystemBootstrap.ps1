@@ -95,17 +95,13 @@ if ((Get-Command 'git' -ErrorAction SilentlyContinue)) {
     git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/main".Replace('\', '/')
 }
 
-if (-not (scoop bucket list).Name -contains 'main') {
-    scoop bucket add main
-    wi "main bucket added."    
-} else {
-    wi "main bucket already added."
-}
-if (-not (scoop bucket list).Name -contains 'extras') {
-    scoop bucket add extras
-    wi "extras bucket added."
-} else {
-    wi "extras bucket already added."
+foreach($bucket in @('main','extra')) { 
+    if (-not (scoop bucket list).Name -contains $bucket) {
+        scoop bucket add $bucket
+        wi "$bucket bucket added."
+    } else {
+        wi "$bucket bucket already added."
+    }
 }
 
 # ------------------------------------------ [Update SCOOP] ------------------------------------------
