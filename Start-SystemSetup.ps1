@@ -154,19 +154,19 @@ if (-not (Test-Path "$env:USERPROFILE\Scripts")) {
 
 $scriptProfilePath = get-item -Path "$env:USERPROFILE\Scripts" 
 
-if ($scriptProfilePath.LinkType -ne 'Junction' -and $scriptProfilePath.ResolvedTarget -ne "$env:SYSTEM_SCRIPTS_ROOT") {
+if ($scriptProfilePath.LinkType -eq 'Junction' -and $scriptProfilePath.ResolvedTarget -eq "$env:SYSTEM_SCRIPTS_ROOT") {
+    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT'"
+} else {
     wi "Removing the '$env:USERPROFILE\Scripts' path"
     Remove-Item -Path "$env:USERPROFILE\Scripts" -Force -Recurse -ErrorAction SilentlyContinue 
     
-    wi "recreating the '$env:USERPROFILE\Scripts' junction"
+    wi "Recreating the '$env:USERPROFILE\Scripts' junction"
     New-Item -ItemType Junction -Path "$env:USERPROFILE\Scripts" -Target "$env:SYSTEM_SCRIPTS_ROOT" -ErrorAction SilentlyContinue | Out-Null
     
     if (-not (Test-Path -Path "$env:USERPROFILE\Scripts\readme.md")) {
         wi 'Issue with mapped scripts path, aborting' 1
         return
     }
-} else {
-    wi "'$env:USERPROFILE\Scripts' is a Junction to '$env:SYSTEM_SCRIPTS_ROOT'"
 }
 
 Write-FooterBlock
