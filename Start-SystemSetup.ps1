@@ -541,6 +541,10 @@ if (-not (Test-Path $coreModulesManual)) {
 Write-FooterBlock
 # -------------------- [Run any domain or machine specific actions] --------------------
 Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+
+$pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
+$pwsh7Exe = $pwsh7Cmd.Path
+
 $localScript = "$coreFunctionsRoot/Start-SystemSetup-local.ps1"
 $domainScript = "$coreFunctionsRoot/Start-SystemSetup-$($userDomain).ps1"
 $machineScript = "$coreFunctionsRoot/Start-SystemSetup-$($env:COMPUTERNAME).ps1"
@@ -548,26 +552,28 @@ $machineScript = "$coreFunctionsRoot/Start-SystemSetup-$($env:COMPUTERNAME).ps1"
 wi "Checking for $localScript"
 if (Test-Path $localScript) {
     Write-HeadingBlock "Running $localScript"
-        & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $localScript
-
-    & $localScript
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $localScript
 }
 
 wi "Checking for $domainScript"
 if (Test-Path $domainScript) {
     Write-HeadingBlock "Running $domainScript"
-    & $domainScript
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $domainScript
 }
 
 wi "Checking for $machineScript"
 if (Test-Path $machineScript) {
     Write-HeadingBlock "Running $machineScript"
-    & $machineScript
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $machineScript
 }
 
 Write-FooterBlock
 # -------------------- [Run any admin domain or machine specific actions] --------------------
 Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+
+$pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
+$pwsh7Exe = $pwsh7Cmd.Path
+
 $localScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-local.ps1"
 $domainScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($userDomain).ps1"
 $machineScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($env:COMPUTERNAME).ps1"
@@ -575,19 +581,19 @@ $machineScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($env:COMPUTER
 wi "Checking for $localScriptAdmin"
 if (Test-Path $localScriptAdmin) {
     Write-HeadingBlock "Running $localScriptAdmin"
-    gsudo & $localScriptAdmin
+    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $localScriptAdmin
 }
 
 wi "Checking for $domainScriptAdmin"
 if (Test-Path $domainScriptAdmin) {
     Write-HeadingBlock "Running $domainScriptAdmin"
-    gsudo & $domainScriptAdmin
+    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $domainScriptAdmin
 }
 
 wi "Checking for $machineScriptAdmin"
 if (Test-Path $machineScriptAdmin) {
     Write-HeadingBlock "Running $machineScriptAdmin"
-    gsudo & $machineScriptAdmin
+    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $machineScriptAdmin
 }
 
 Write-FooterBlock
