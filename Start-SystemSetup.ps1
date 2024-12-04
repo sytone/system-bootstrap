@@ -541,8 +541,15 @@ if (-not (Test-Path $coreModulesManual)) {
 Write-FooterBlock
 # -------------------- [Run any domain or machine specific actions] --------------------
 Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+$localScript = "$coreFunctionsRoot/Start-SystemSetup-local.ps1"
 $domainScript = "$coreFunctionsRoot/Start-SystemSetup-$($userDomain).ps1"
 $machineScript = "$coreFunctionsRoot/Start-SystemSetup-$($env:COMPUTERNAME).ps1"
+
+wi "Checking for $localScript"
+if (Test-Path $localScript) {
+    Write-HeadingBlock "Running $localScript"
+    & $localScript
+}
 
 wi "Checking for $domainScript"
 if (Test-Path $domainScript) {
@@ -559,8 +566,15 @@ if (Test-Path $machineScript) {
 Write-FooterBlock
 # -------------------- [Run any admin domain or machine specific actions] --------------------
 Write-HeadingBlock 'Checking for machine/domain specific scripts...'
+$localScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-local.ps1"
 $domainScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($userDomain).ps1"
 $machineScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($env:COMPUTERNAME).ps1"
+
+wi "Checking for $localScriptAdmin"
+if (Test-Path $localScriptAdmin) {
+    Write-HeadingBlock "Running $localScriptAdmin"
+    gsudo & $localScriptAdmin
+}
 
 wi "Checking for $domainScriptAdmin"
 if (Test-Path $domainScriptAdmin) {
