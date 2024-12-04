@@ -368,32 +368,7 @@ Remove-Item -Path "$toolsPath\pwsh" -Force -Recurse -ErrorAction SilentlyContinu
 New-Item -ItemType Junction -Path "$toolsPath\pwsh" -Target (get-item "$env:USERPROFILE\scoop\apps\pwsh\current").target -ErrorAction SilentlyContinue | Out-Null
 
 Write-FooterBlock
-# -------------------- [Update Windows Terminal Configuration] --------------------
-Write-HeadingBlock 'Updating Windows Terminal Settings'
 
-$windowsTerminalSettingsPath = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsTerminalSettingsPath" -DefaultValue '' -ExpandVariables
-if ($windowsTerminalSettingsPath -eq '') {
-    wi 'No Windows Terminal settings path configured'
-} else {
-    # Even if the path is in the configuration, windows-teminal installed via scoop may not exist. So this will
-    # skip if you are not using windows terminal via scoop.
-    if ((Test-Path "$env:USERPROFILE\scoop\persist\windows-terminal")) {
-        # Delete the settings path if it exists and make sure it points to the path
-        # configured in settings.
-        $persistedWindowsTerminalSettingsExists = Test-Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings"
-        if($persistedWindowsTerminalSettingsExists) {
-            Remove-Item -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Force -Recurse
-        }
-        
-        wi 'Creating symbolic link for Windows Terminal Settings'
-        $wtLink = New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Target $windowsTerminalSettingsPath
-        if ($null -eq $wtLink) {
-            ww "Unable to create Windows Terminal symlink"
-        }
-    }
-}
-
-Write-FooterBlock
 # -------------------- [Update GIT configuration] --------------------
 Write-HeadingBlock 'Update GIT configuration'
 
@@ -512,6 +487,32 @@ foreach ($feature in $windowsFeatures) {
         gsudo Enable-WindowsOptionalFeature -Online -FeatureName $feature -All -NoRestart
     } else {
         wi "Windows Feature '$feature' is already installed."
+    }
+}
+
+Write-FooterBlock
+# -------------------- [Update Windows Terminal Configuration] --------------------
+Write-HeadingBlock 'Updating Windows Terminal Settings'
+
+$windowsTerminalSettingsPath = Get-SimpleSetting -Section 'SystemSetup' -Name "windowsTerminalSettingsPath" -DefaultValue '' -ExpandVariables
+if ($windowsTerminalSettingsPath -eq '') {
+    wi 'No Windows Terminal settings path configured'
+} else {
+    # Even if the path is in the configuration, windows-teminal installed via scoop may not exist. So this will
+    # skip if you are not using windows terminal via scoop.
+    if ((Test-Path "$env:USERPROFILE\scoop\persist\windows-terminal")) {
+        # Delete the settings path if it exists and make sure it points to the path
+        # configured in settings.
+        $persistedWindowsTerminalSettingsExists = Test-Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings"
+        if($persistedWindowsTerminalSettingsExists) {
+            Remove-Item -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Force -Recurse
+        }
+        
+        wi 'Creating symbolic link for Windows Terminal Settings'
+        $wtLink = New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Target $windowsTerminalSettingsPath
+        if ($null -eq $wtLink) {
+            ww "Unable to create Windows Terminal symlink"
+        }
     }
 }
 
