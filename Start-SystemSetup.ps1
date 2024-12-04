@@ -378,15 +378,17 @@ if ($windowsTerminalSettingsPath -eq '') {
     # Even if the path is in the configuration, windows-teminal installed via scoop may not exist. So this will
     # skip if you are not using windows terminal via scoop.
     if ((Test-Path "$env:USERPROFILE\scoop\persist\windows-terminal")) {
-        if (-not (Get-Item "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings").LinkType -eq 'SymbolicLink') {
-            wi 'Creating symbolic link for Windows Terminal Settings'
+        # Delete the settings path if it exists and make sure it points to the path
+        # configured in settings.
+        $persistedWindowsTerminalSettingsExists = Test-Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings"
+        if($persistedWindowsTerminalSettingsExists) {
             Remove-Item -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Force -Recurse
-            $wtLink = New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Target $windowsTerminalSettingsPath
-            if ($null -eq $wtLink) {
-                ww "Unable to create Windows Terminal symlink"
-            }
-        } else {
-            wi 'Windows Terminal settings are already linked'
+        }
+        
+        wi 'Creating symbolic link for Windows Terminal Settings'
+        $wtLink = New-Item -ItemType SymbolicLink -Path "$env:USERPROFILE\scoop\persist\Windows-Terminal\settings" -Target $windowsTerminalSettingsPath
+        if ($null -eq $wtLink) {
+            ww "Unable to create Windows Terminal symlink"
         }
     }
 }
