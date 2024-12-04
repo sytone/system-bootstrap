@@ -581,19 +581,19 @@ $machineScriptAdmin = "$coreFunctionsRoot/Start-SystemSetupAdmin-$($env:COMPUTER
 wi "Checking for $localScriptAdmin"
 if (Test-Path $localScriptAdmin) {
     Write-HeadingBlock "Running $localScriptAdmin"
-    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $localScriptAdmin
+    gsudo & $localScriptAdmin
 }
 
 wi "Checking for $domainScriptAdmin"
 if (Test-Path $domainScriptAdmin) {
     Write-HeadingBlock "Running $domainScriptAdmin"
-    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $domainScriptAdmin
+    gsudo & $domainScriptAdmin
 }
 
 wi "Checking for $machineScriptAdmin"
 if (Test-Path $machineScriptAdmin) {
     Write-HeadingBlock "Running $machineScriptAdmin"
-    gsudo & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $machineScriptAdmin
+    gsudo & $machineScriptAdmin
 }
 
 Write-FooterBlock
