@@ -548,6 +548,8 @@ $machineScript = "$coreFunctionsRoot/Start-SystemSetup-$($env:COMPUTERNAME).ps1"
 wi "Checking for $localScript"
 if (Test-Path $localScript) {
     Write-HeadingBlock "Running $localScript"
+        & $pwsh7Exe -ExecutionPolicy Bypass -NoLogo -NonInteractive -Command $localScript
+
     & $localScript
 }
 
