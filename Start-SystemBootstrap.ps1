@@ -85,7 +85,7 @@ if ($null -eq (Get-ScoopApp -Name 'git')) {
 
 # Setup the manager for global and system.
 git config --global credential.helper manager
-git config --system credential.helper "!`"$((scoop info git -v).Installed.Replace("\","/"))/mingw64/bin/git-credential-manager.exe`""
+# git config --system credential.helper "!`"$((scoop info git -v).Installed.Replace("\","/"))/mingw64/bin/git-credential-manager.exe`""
 
 # ------------------------------------------ [Add SCOOP Buckets] ------------------------------------------
 Write-HeadingBlock -Message 'Add SCOOP Buckets'
