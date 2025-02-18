@@ -1,6 +1,8 @@
 #Requires -PSEdition Desktop
 # Bootstrap should be run on windows powershell which is the desktop version.
 
+$version = "1.0.1"
+
 $ESCAPE = $([char]27)
 $NORMAL = "$ESCAPE[0m"
 
@@ -128,6 +130,7 @@ Write-Output '(_    __|_ _ ._ _ |_) _  __|_ __|_.__.._  '
 Write-Output '__)\/_> |_(/_| | ||_)(_)(_)|__> |_|(_||_) '
 Write-Output '   /                                  |   '
 Write-Output ''
+Write-Output "Version: $version"
 
 foreach ($step in $steps) {
     Write-StepResult -StepName $step.name -Status 'Running' -InitialStatus
