@@ -1,181 +1,223 @@
 #Requires -PSEdition Desktop
-# Bootstrap should be run on windows powershell which is the desktop version.
+# This is run in powershell. It sets up all the 
+# installers and gets git and pwsh running and then
+# the other installers can run.
 
-$ESCAPE = $([char]27)
-$NORMAL = "$ESCAPE[0m"
+# This should always be 100% idempotent.
+function wi($message) {
+    Write-Host "[$(Get-Date -Format 'yyyyMMdd-hhmmss')][INF] $message"
+}
 
-$WHITE_FOREGROUND = "$ESCAPE[37m"
-$BLUE_FOREGROUND = "$ESCAPE[34m"
-$GREEN_FOREGROUND = "$ESCAPE[32m"
-$RED_BACKGROUND = "$ESCAPE[41m"
-$BOLD = "$ESCAPE[1m"
-function Write-StepResult {
-    [CmdletBinding()]
-    param(
-        $StepName,
-        $Status,
-        [switch] $InitialStatus
-    )
+function ww($message) {
+    Write-Warning $message
+}
 
-    $dots = $("." * (80 - $StepName.length - $Status.length) )
-    if ($Status -eq 'Failed') {
-        Write-Host "`r$($StepName)$($dots)$WHITE_FOREGROUND$RED_BACKGROUND$($Status)$NORMAL"
+function Write-HeadingBlock($Message) {
+    Write-Host "[$(Get-Date -Format 'yyyyMMdd-hhmmss')][INF] "
+    Write-Host "[$(Get-Date -Format 'yyyyMMdd-hhmmss')][INF] --- [$Message] ---"
+}
+
+function Get-ScoopApp($Name) {
+    return $scoopConfiguration.apps | Where-Object { $_.Name -eq $Name }
+}
+
+function Update-ScoopApp($Name) {
+    if (($scoopStatus | Where-Object { $_.Name -eq $Name })) { 
+        wi "Updating $Name to: '$(($scoopStatus | Where-Object {$_.Name -eq $Name}).'Latest Version')'"
+        scoop update $Name
+    }
+}
+
+$trueValues = @{
+    'Y'    = $true
+    'YES'  = $true
+    'TRUE' = $true
+    1      = $true
+}
+
+#
+# ---------------------------------- [Log Environment Configuration] ---------------------------------
+#
+Write-HeadingBlock -Message 'Environment Configuration Used'
+
+wi "        SYSTEM_SCRIPTS_ROOT: '$env:SYSTEM_SCRIPTS_ROOT'"
+wi "      SYSTEM_AUTO_RUN_SETUP: '$env:SYSTEM_AUTO_RUN_SETUP'"
+wi "     SYSTEM_SKIP_WINGET_DSC: '$env:SYSTEM_SKIP_WINGET_DSC'"
+wi " SIMPLESETTINGS_CONFIG_FILE: '$env:SIMPLESETTINGS_CONFIG_FILE'"
+wi "                USERPROFILE: '$env:USERPROFILE'"
+wi ""
+
+wi "Starting minimal boostrap to get the system to a point where full installation scripts can run."
+
+$currentExecutionPolicy = Get-ExecutionPolicy
+
+if ($currentExecutionPolicy -ne 'Unrestricted') {
+    ww "Please set execution policy to 'Unrestricted' in a admin instance of PowerShell, it is currently set to '$currentExecutionPolicy'."
+    ww "Set-ExecutionPolicy -ExecutionPolicy Unrestricted"
+}
+
+# Install Scoop
+# ---------------------------------------- [Check for SCOOP] -----------------------------------------
+Write-HeadingBlock -Message 'Check for SCOOP'
+
+$scoopOk = Get-Command -Name scoop -ErrorAction SilentlyContinue
+if ($null -eq $scoopOk) {
+    ww 'Installing Scoop'
+    Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+} else {
+    wi 'Scoop installed.'
+    scoop update *> $null
+}
+
+$scoopConfiguration = (scoop export | ConvertFrom-Json)
+$scoopStatus = (scoop status --local)
+
+# ------------------------------------------ [Check for GIT] -----------------------------------------
+# Minial footprint on start, just make sure git is around and any other scoop dependcies it has.
+Write-HeadingBlock -Message 'Check for GIT'
+if ($null -eq (Get-ScoopApp -Name 'git')) {
+    ww 'Cannot find git in scoop, installing.'
+    scoop install git
+} else {
+    wi 'Git is installed.'
+    Update-ScoopApp -Name 'git'
+}
+
+# Setup the manager for global and system.
+git config --global credential.helper manager
+# git config --system credential.helper "!`"$((scoop info git -v).Installed.Replace("\","/"))/mingw64/bin/git-credential-manager.exe`""
+
+# ------------------------------------------ [Add SCOOP Buckets] ------------------------------------------
+Write-HeadingBlock -Message 'Add SCOOP Buckets'
+
+if ((Get-Command 'git' -ErrorAction SilentlyContinue)) {
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/extras".Replace('\', '/')
+    git config --global --add safe.directory "$ENV:USERPROFILE/scoop/buckets/main".Replace('\', '/')
+}
+
+foreach($bucket in @('main','extra')) { 
+    if (-not (scoop bucket list).Name -contains $bucket) {
+        scoop bucket add $bucket
+        wi "$bucket bucket added."
     } else {
-        if ($InitialStatus) {
-            Write-Host "$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
-        } else {
-            Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL"
-        }
+        wi "$bucket bucket already added."
     }
 }
 
-# To add checks, just duplicate one of the below checks and add the script blocks and
-# update descriptions.
-$steps = @()
+# ------------------------------------------ [Update SCOOP] ------------------------------------------
+Write-HeadingBlock -Message 'Update SCOOP'
+scoop update *> $null
+$scoopConfiguration = (scoop export | ConvertFrom-Json)
+$scoopStatus = (scoop status --local)
+wi "Scoop updated."
 
-$steps += [pscustomobject]@{
-    name          = 'Creating system-bootstrap folder'
-    description   = 'Creates the temporary bootstrap folder.'
-    passed        = $false
-    details       = $null
-    errorAction   = {
-        Write-Host 'Unable to make the temporary bootstrap folder.'
-    }
-    detailsAction = {}
-    script        = {
-        $bootstrapFolder = "$env:temp\system-bootstrap"
-        New-Item -Path $bootstrapFolder -ItemType Directory -Force | Out-Null
-
-        if (-not (Test-Path $bootstrapFolder)) {
-            return $false, "Failed to create folder", "Folder failed to be created at: '$bootstrapFolder'"
-        }
-
-        return $true, "Folder created", "Folder created at: '$bootstrapFolder'"
-    }
+# ------------------------------------------ [Check for gsudo] -----------------------------------------
+Write-HeadingBlock -Message 'Check for gsudo'
+if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
+    ww 'Cannot find gsudo in scoop, installing.'
+    scoop install gsudo
+} else {
+    wi "gsudo is installed."
+    Update-ScoopApp -Name 'gsudo'
 }
 
-$steps += [pscustomobject]@{
-    name          = 'Downloading system-bootstrap files'
-    description   = 'Downloads the files from the system-bootstrap repo on github.'
-    passed        = $false
-    details       = $null
-    errorAction   = {
-        Write-Host 'Unable to download the files from github.'
+# ---------------------------------- [Check for PowerShell Core 7+] ----------------------------------
+Write-HeadingBlock -Message 'Check for PowerShell Core 7+'
+$runningInPowerShell = $host.Version.Major -le 5
+
+if ($runningInPowerShell) {
+    wi 'Running in PowerShell, ok to install / upgrade pwsh'
+    while ((Get-Process -Name pwsh -ErrorAction SilentlyContinue).count -gt 0) {
+        wi 'Waiting for all PowerSehll Core processes to stop...'
+        Start-Sleep -Seconds 5
     }
-    detailsAction = {}
-    script        = {
-        $bootstrapFolder = "$env:temp\system-bootstrap"
-        $files = @(
-            'Start-SystemBootstrap.ps1',
-            'basesystem.dsc.yaml',
-            'Start-SystemSetup.ps1'
-        )
-
-        foreach ($file in $files) {
-            try {
-                $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
-                $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
-            } catch {
-                    return $false, "Failed to download files", "$bootstrapFolder\$file"
-            }
-        }
-
-        foreach ($file in $files) {
-            if (-not (Test-Path "$bootstrapFolder\$file")) {
-                return $false, "Failed to download files", "$bootstrapFolder\$file"
-            }
-        }
-
-        return $true, "Files downloaded", $files
-    }
-}
-
-$steps += [pscustomobject]@{
-    name          = 'Creating desktop shortcut'
-    description   = 'Adds a shortcut to the desktop to make future updates simpler.'
-    passed        = $false
-    details       = $null
-    errorAction   = {
-        Write-Host 'Unable to create the desktop shortcut.'
-    }
-    detailsAction = {}
-    script        = {
-
-        if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
-            $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
-            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
-            $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
-            if(Test-Path $linkPath) {
-                Remove-Item $linkPath -Force | Out-Null
-            }
-            $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
-            $link.TargetPath = 'powershell'
-            $link.Arguments = "-NoExit -NoProfile -Command `"iwr $downloadLink | iex`""
-            $link.Save()
-
-            if (-not (Test-Path $linkPath)) {
-                return $false, "Failed to create Update link", $linkPath
-            }
-
-            return $true, "Update Link created", $linkPath
-        } else {
-            return $true, "Update Link Skipped", $null
-	}
-    }
-}
-
-
-Write-Output ' __                _                      '
-Write-Output '(_    __|_ _ ._ _ |_) _  __|_ __|_.__.._  '
-Write-Output '__)\/_> |_(/_| | ||_)(_)(_)|__> |_|(_||_) '
-Write-Output '   /                                  |   '
-Write-Output ''
-Write-Output 'Version: 1.0.1'
-Write-Output ''
-
-foreach ($step in $steps) {
-    Write-StepResult -StepName $step.name -Status 'Running' -InitialStatus
-
-    $status = Invoke-Command -ScriptBlock $step.script
-
-    if ($status[0]) {
-        $step.passed = $true
-        $step.details = $status[2]
-        Write-StepResult -StepName $step.name -Status $status[1]
+    if ($null -eq (Get-ScoopApp -Name 'pwsh')) {
+        ww 'Cannot find pwsh in scoop, installing.'
+        scoop install pwsh
     } else {
-        $step.passed = $false
-        $step.details = $status[2]
-        Write-StepResult -StepName $step.name -Status $status[1]
+        wi "pwsh is installed."
+        Update-ScoopApp -Name 'pwsh' 
+    }    
+} else {
+    ww "You are running this in PowerShell Core (pwsh) please run this in Windows Powershell so PowerShell Core can be installed."
+    exit 1
+} 
+
+
+# ------------------------------------------ [Check for WinGet] -----------------------------------------
+Write-HeadingBlock -Message 'Check for WinGet'
+
+wi 'Checking for Nuget Package Provider'
+if ($null -eq (Get-PackageProvider -Name Nuget)) {
+    Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -Confirm:$false
+}
+
+wi "Checking the PSGallery is Trusted"
+if ((Get-PSRepository -Name PSGallery).InstallationPolicy -ne 'Trusted') {
+    Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted
+}
+
+$pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
+$pwsh7Exe = $pwsh7Cmd.Path
+
+wi "Installing WinGet modules if missing and validating winget is OK."
+
+# Everything is expected to run in powershell core, if you are using the deskop more then this will not be
+# a good experience.
+& $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Client' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force }"
+& $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Configuration' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Configuration -Scope CurrentUser -Force }"
+& $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command 'Repair-WinGetPackageManager -Latest -Force -Verbose'
+
+# ------------------------------------------ [Base System DSC] -----------------------------------------
+Write-HeadingBlock -Message 'Configure Base System DSC'
+
+if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $trueValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
+    wi "Running Base DSC"
+    $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
+    gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
+} else {
+    wi "Skipped running Base DSC"
+}
+
+# ---------------------------------------- [Check for Required Modules] -----------------------------------------
+# Minial set of modules to make life easier. All in PowerShell Core.
+Write-HeadingBlock -Message 'Check for Required Modules'
+
+$expectedPowerShellModules = @(
+    'poshlog',
+    'Microsoft.PowerShell.ConsoleGuiTools',
+    'SimpleSettings'
+)
+
+foreach ($moduleName in $expectedPowerShellModules) {
+    wi "Checking that $moduleName module is installed."
+    $installCommand = "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force } else { Write-Host 'Module $moduleName is installed.' }"
+    wi "Running:"
+    wi "$installCommand"
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "& { $installCommand }"
+}
+
+# ---------------------------------------- [Notifiy user to run next step] -----------------------------------------
+Write-HeadingBlock -Message 'Notifiy user to run next step'
+wi " "
+wi "Ready for execution of Start-SystemSetup.ps1 to complete local configuration."
+wi "Please run the following command to complete the setup or press Enter/Y at prompt."
+wi " "
+wi "& '$pwsh7Exe' -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command '$PSScriptRoot\Start-SystemSetup.ps1'"
+wi " "
+wi " "
+wi "Start-SystemBootstrap Completed"
+
+if ($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $trueValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+    $runNextStep = Read-Host -Prompt "Would you like to execute the system setup? (Y/n)"
+} else {
+    if ($trueValues.ContainsKey($($env:SYSTEM_AUTO_RUN_SETUP).ToUpper())) {
+        $runNextStep = 'Y'
+    } else {
+        $runNextStep = 'N'
     }
 }
 
-foreach ($check in $checks) {
-    if ($check.passed -and $null -ne $check.details) {
-        $check.name
-        Invoke-Command -ScriptBlock $check.detailsAction -ArgumentList $check.details
-    }
-    if ($check.passed -and $null -eq $check.details) {
-        "$($check.name) - NA"
-    }
+if ($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
+    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "$PSScriptRoot\Start-SystemSetup.ps1"
 }
-
-foreach ($check in $checks) {
-    if (!$check.passed) {
-        $check.name
-        Invoke-Command -ScriptBlock $check.errorAction -ArgumentList $check.details
-    }
-    if ($check.passed) {
-        "$($check.name) - NA"
-    }
-}
-
-foreach ($check in $checks) {
-    if (!$check.passed) {
-        exit 1
-    }
-}
-
-Write-Output ""
-Write-Output "Running $bootstrapFolder\Start-SystemBootstrap.ps1"
-Write-Output ""
-& "$bootstrapFolder\Start-SystemBootstrap.ps1"
