@@ -74,7 +74,7 @@ $steps += [pscustomobject]@{
         foreach ($file in $files) {
             try {
                 $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
-                $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force
+                $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
             } catch {
                     return $false, "Failed to download files", "$bootstrapFolder\$file"
             }
