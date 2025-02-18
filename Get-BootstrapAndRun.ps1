@@ -102,8 +102,9 @@ $steps += [pscustomobject]@{
     script        = {
 
         if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
-            $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
-            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
+#            $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
+#            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
+            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/refs/heads/main/Get-BootstrapAndRun.ps1"
             $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
             if(Test-Path $linkPath) {
                 Remove-Item $linkPath -Force | Out-Null
