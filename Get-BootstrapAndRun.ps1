@@ -64,6 +64,7 @@ $steps += [pscustomobject]@{
     }
     detailsAction = {}
     script        = {
+        $bootstrapFolder = "$env:temp\system-bootstrap"
         $files = @(
             'Start-SystemBootstrap.ps1',
             'basesystem.dsc.yaml',
@@ -71,8 +72,12 @@ $steps += [pscustomobject]@{
         )
 
         foreach ($file in $files) {
-            $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
-            $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force
+            try {
+                $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
+                $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
+            } catch {
+                    return $false, "Failed to download files", "$bootstrapFolder\$file"
+            }
         }
 
         foreach ($file in $files) {
@@ -97,13 +102,15 @@ $steps += [pscustomobject]@{
     script        = {
 
         if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
+            $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
+            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
             $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
             if(Test-Path $linkPath) {
                 Remove-Item $linkPath -Force | Out-Null
             }
             $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
             $link.TargetPath = 'powershell'
-            $link.Arguments = "-NoExit -NoProfile -Command `"iwr https://raw.githubusercontent.com/sytone/system-bootstrap/main/Get-BootstrapAndRun.ps1 | iex`""
+            $link.Arguments = "-NoExit -NoProfile -Command `"iwr $downloadLink | iex`""
             $link.Save()
 
             if (-not (Test-Path $linkPath)) {
@@ -122,6 +129,8 @@ Write-Output ' __                _                      '
 Write-Output '(_    __|_ _ ._ _ |_) _  __|_ __|_.__.._  '
 Write-Output '__)\/_> |_(/_| | ||_)(_)(_)|__> |_|(_||_) '
 Write-Output '   /                                  |   '
+Write-Output ''
+Write-Output 'Version: 1.0.1'
 Write-Output ''
 
 foreach ($step in $steps) {
