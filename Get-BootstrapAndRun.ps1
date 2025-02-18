@@ -1,6 +1,8 @@
 #Requires -PSEdition Desktop
 # Bootstrap should be run on windows powershell which is the desktop version.
 
+$bootstrapFolder = "$env:temp\system-bootstrap"
+
 $ESCAPE = $([char]27)
 $NORMAL = "$ESCAPE[0m"
 
@@ -43,7 +45,6 @@ $steps += [pscustomobject]@{
     }
     detailsAction = {}
     script        = {
-        $bootstrapFolder = "$env:temp\system-bootstrap"
         New-Item -Path $bootstrapFolder -ItemType Directory -Force | Out-Null
 
         if (-not (Test-Path $bootstrapFolder)) {
@@ -64,7 +65,6 @@ $steps += [pscustomobject]@{
     }
     detailsAction = {}
     script        = {
-        $bootstrapFolder = "$env:temp\system-bootstrap"
         $files = @(
             'Start-SystemBootstrap.ps1',
             'basesystem.dsc.yaml',
@@ -102,8 +102,8 @@ $steps += [pscustomobject]@{
     script        = {
 
         if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
-#            $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
-#            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
+            # $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
+            # $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
             $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/refs/heads/main/Get-BootstrapAndRun.ps1"
             $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
             if(Test-Path $linkPath) {
