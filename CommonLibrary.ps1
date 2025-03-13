@@ -96,6 +96,12 @@ function Write-StepResult {
     $WHITE_FOREGROUND = "$ESCAPE[37m"
     $GREEN_FOREGROUND = "$ESCAPE[32m"
     $RED_BACKGROUND = "$ESCAPE[41m"
+    if ($StepName.length -gt 80) {
+        $StepName = $StepName.Substring(0, 30)
+    }
+    if ($Status.length -gt 80) {
+        $Status = $Status.Substring(0, 75)
+    }
     $dots = $("." * (80 - $StepName.length - $Status.length) )
 
     if ($Status -eq 'Failed') {
