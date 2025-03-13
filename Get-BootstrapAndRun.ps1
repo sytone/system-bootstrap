@@ -1,17 +1,7 @@
 #Requires -PSEdition Desktop
 # Bootstrap should be run on windows powershell which is the desktop version.
-$version = "1.0.2"
-
 $bootstrapFolder = "$env:temp\system-bootstrap"
 
-$ESCAPE = $([char]27)
-$NORMAL = "$ESCAPE[0m"
-
-$WHITE_FOREGROUND = "$ESCAPE[37m"
-$BLUE_FOREGROUND = "$ESCAPE[34m"
-$GREEN_FOREGROUND = "$ESCAPE[32m"
-$RED_BACKGROUND = "$ESCAPE[41m"
-$BOLD = "$ESCAPE[1m"
 function Write-StepResult {
     [CmdletBinding()]
     param(
@@ -20,7 +10,13 @@ function Write-StepResult {
         [switch] $InitialStatus
     )
 
+    $ESCAPE = $([char]27)
+    $NORMAL = "$ESCAPE[0m"
+    $WHITE_FOREGROUND = "$ESCAPE[37m"
+    $GREEN_FOREGROUND = "$ESCAPE[32m"
+    $RED_BACKGROUND = "$ESCAPE[41m"
     $dots = $("." * (80 - $StepName.length - $Status.length) )
+
     if ($Status -eq 'Failed') {
         Write-Host "`r$($StepName)$($dots)$WHITE_FOREGROUND$RED_BACKGROUND$($Status)$NORMAL"
     } else {
@@ -31,12 +27,12 @@ function Write-StepResult {
         }
     }
 }
-
 # To add checks, just duplicate one of the below checks and add the script blocks and
 # update descriptions.
-$steps = @()
+$initialSteps = @()
 
-$steps += [pscustomobject]@{
+$initialSteps += [pscustomobject]@{
+    id            = 'create_temp_folder'
     name          = 'Creating system-bootstrap folder'
     description   = 'Creates the temporary bootstrap folder.'
     passed        = $false
@@ -56,7 +52,8 @@ $steps += [pscustomobject]@{
     }
 }
 
-$steps += [pscustomobject]@{
+$initialSteps += [pscustomobject]@{
+    id            = 'download_files'
     name          = 'Downloading system-bootstrap files'
     description   = 'Downloads the files from the system-bootstrap repo on github.'
     passed        = $false
@@ -69,15 +66,22 @@ $steps += [pscustomobject]@{
         $files = @(
             'Start-SystemBootstrap.ps1',
             'basesystem.dsc.yaml',
-            'Start-SystemSetup.ps1'
+            'Start-SystemSetup.ps1',
+            'CommonLibrary.ps1'
         )
 
         foreach ($file in $files) {
             try {
-                $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
-                $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
+                if ($null -eq $env:SYSTEM_LOCAL_TEST) {
+                    $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
+                    $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
+                } else {
+                    # testing locally. Copy the files from the local repo to the temp folder.
+                    $scriptDownload = Copy-Item -Path "$PSScriptRoot\$file" -Destination "$bootstrapFolder\$file" -Force | Out-Null
+                }
+
             } catch {
-                    return $false, "Failed to download files", "$bootstrapFolder\$file"
+                return $false, "Failed to download files", "$bootstrapFolder\$file"
             }
         }
 
@@ -91,51 +95,11 @@ $steps += [pscustomobject]@{
     }
 }
 
-$steps += [pscustomobject]@{
-    name          = 'Creating desktop shortcut'
-    description   = 'Adds a shortcut to the desktop to make future updates simpler.'
-    passed        = $false
-    details       = $null
-    errorAction   = {
-        Write-Host 'Unable to create the desktop shortcut.'
-    }
-    detailsAction = {}
-    script        = {
+Write-Output "SYSTEM_LOCAL_TEST: '$env:SYSTEM_LOCAL_TEST'"
 
-        if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
-            # $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
-            # $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
-            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/refs/heads/main/Get-BootstrapAndRun.ps1"
-            $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
-            if(Test-Path $linkPath) {
-                Remove-Item $linkPath -Force | Out-Null
-            }
-            $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
-            $link.TargetPath = 'powershell'
-            $link.Arguments = "-NoExit -NoProfile -Command `"iwr $downloadLink | iex`""
-            $link.Save()
+# Create folder and download first.
 
-            if (-not (Test-Path $linkPath)) {
-                return $false, "Failed to create Update link", $linkPath
-            }
-
-            return $true, "Update Link created", $linkPath
-        } else {
-            return $true, "Update Link Skipped", $null
-	}
-    }
-}
-
-
-Write-Output ' __                _                      '
-Write-Output '(_    __|_ _ ._ _ |_) _  __|_ __|_.__.._  '
-Write-Output '__)\/_> |_(/_| | ||_)(_)(_)|__> |_|(_||_) '
-Write-Output '   /                                  |   '
-Write-Output ''
-Write-Output "Version: $version"
-Write-Output ''
-
-foreach ($step in $steps) {
+foreach ($step in $initialSteps) {
     Write-StepResult -StepName $step.name -Status 'Running' -InitialStatus
 
     $status = Invoke-Command -ScriptBlock $step.script
@@ -150,34 +114,94 @@ foreach ($step in $steps) {
         Write-StepResult -StepName $step.name -Status $status[1]
     }
 }
+if ($env:SYSTEM_LOGGING_LEVEL -eq 'VERBOSE') {
 
-foreach ($check in $checks) {
-    if ($check.passed -and $null -ne $check.details) {
-        $check.name
-        Invoke-Command -ScriptBlock $check.detailsAction -ArgumentList $check.details
-    }
-    if ($check.passed -and $null -eq $check.details) {
-        "$($check.name) - NA"
+    foreach ($step in $initialSteps) {
+        if ($step.passed -and $null -ne $step.details) {
+            $step.name
+            Invoke-Command -ScriptBlock $step.detailsAction -ArgumentList $step.details
+        }
+        if ($step.passed -and $null -eq $step.details) {
+            "$($step.name) - NA"
+        }
     }
 }
 
-foreach ($check in $checks) {
-    if (!$check.passed) {
-        $check.name
-        Invoke-Command -ScriptBlock $check.errorAction -ArgumentList $check.details
-    }
-    if ($check.passed) {
-        "$($check.name) - NA"
+foreach ($step in $initialSteps) {
+    if (!$step.passed) {
+        $step.name
+        Invoke-Command -ScriptBlock $step.errorAction -ArgumentList $step.details
     }
 }
 
-foreach ($check in $checks) {
-    if (!$check.passed) {
+foreach ($step in $initialSteps) {
+    if (!$step.passed) {
         exit 1
     }
 }
 
-Write-Output ""
-Write-Output "Running $bootstrapFolder\Start-SystemBootstrap.ps1"
-Write-Output ""
+# Common library now available to use. Everything before this is native powershell commands only and nothing special.
+. $PSScriptRoot\CommonLibrary.ps1
+
+$finalSteps = @()
+
+$finalSteps += [pscustomobject]@{
+    id            = 'create_desktop_shortcut'
+    name          = 'Creating desktop shortcut'
+    description   = 'Adds a shortcut to the desktop to make future updates simpler.'
+    passed        = $false
+    details       = $null
+    errorAction   = {
+        Write-Host 'Unable to create the desktop shortcut.'
+    }
+    detailsAction = {}
+    script        = {
+        $linkPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Update System.lnk"
+
+        if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
+            # $latestCommit = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main") | ConvertFrom-Json).commit.sha
+            # $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/$($latestCommit)/Get-BootstrapAndRun.ps1"
+            $downloadLink = "https://raw.githubusercontent.com/sytone/system-bootstrap/refs/heads/main/Get-BootstrapAndRun.ps1"
+            if (Test-Path $linkPath) {
+                Remove-Item $linkPath -Force | Out-Null
+            }
+            $link = (New-Object -ComObject WScript.Shell).CreateShortcut($linkPath)
+            $link.TargetPath = 'powershell'
+            $link.Arguments = "-NoExit -NoProfile -Command `"iwr $downloadLink | iex`""
+            $link.Save()
+
+            if (-not (Test-Path $linkPath)) {
+                return $false, "Failed to create Update link", $linkPath
+            }
+
+            return $true, "Update Link created", $linkPath
+        } else {
+            return $true, "Update Link Skipped", $linkPath
+        }
+    }
+}
+
+if ($null -eq $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION) {
+    Set-EnvironmentVariable 'SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION' "FALSE"
+}
+# https://patorjk.com/software/taag/#p=display&h=0&v=0&f=Straight&t=System%20Bootstrap
+wi '__                    __                               '
+wi '(_      _ |_  _  _    |__)  _   _  |_  _ |_  _  _   _  '
+wi '__) \/ _) |_ (- |||   |__) (_) (_) |_ _) |_ |  (_| |_) '
+wi '    /                                              |   '
+wi ''
+wi "Version: $version"
+Write-HeadingBlock -Message 'Environment Configuration Used'
+wi " SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION: '$env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION'"
+wi ""
+
+$stepsOutcome = Start-StepExecution $finalSteps
+
+if ($stepsOutcome.FailedSteps -gt 0) {
+    Write-Host "One or more steps failed"
+    exit 1
+}
+
+Write-HeadingBlock -Message "Running $bootstrapFolder\Start-SystemBootstrap.ps1"
+
 & "$bootstrapFolder\Start-SystemBootstrap.ps1"

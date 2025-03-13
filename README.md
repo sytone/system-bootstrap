@@ -45,7 +45,35 @@ Set-SimpleSetting -Section 'SystemSetup' -Name 'ScoopConfiguration' -DefaultValu
 }
 ```
 
-## Bootstrap Options
+## Environment Variables
+
+### SYSTEM_SCRIPTS_ROOT
+
+Specifies the root directory for system scripts. If this is via OneDrive then it is the local path to your scripts directory. If scripts are coming from GIT then this is a local path the repo is cloned to.
+
+Default: `$($env:USERPROFILE)\scriptsrepo`
+
+Examples:
+
+```PowerShell
+# OneDrive Consumer
+[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$($env:OneDriveConsumer)\scripts", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_SCRIPTS_ROOT = "$($env:OneDriveConsumer)\scripts"
+
+# OneDrive Commercial
+[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$($env:OneDriveCommercial)\scripts", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_SCRIPTS_ROOT = "$($env:OneDriveCommercial)\scripts"
+
+# GIT
+[System.Environment]::SetEnvironmentVariable('SYSTEM_SCRIPTS_ROOT', "$($env:USERPROFILE)\scriptsrepo", [System.EnvironmentVariableTarget]::User)
+$env:SYSTEM_SCRIPTS_ROOT = "$($env:USERPROFILE)\scriptsrepo"
+```
+
+### SYSTEM_LOGGING_LEVEL
+
+Specifies the logging level, set to VERBOSE to see more information.
+
+Default: `INFO`
 
 ### Auto Run Start-SystemSetup
 
@@ -73,6 +101,7 @@ By default a desktop shortcut is created so you can run this process again to up
 [System.Environment]::SetEnvironmentVariable('SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION', "TRUE", [System.EnvironmentVariableTarget]::User)
 $env:SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION = "TRUE"
 ```
+
 ## Local Powershell Repository
 
 To make scripts a bit more portable, this uses a local PSRepository. The packages are all stored in `{onedrive work/personal}/localpsgallery` and published to that location or installed from that location. It is a simple way to manage your personal scripts and have history if you want.
@@ -98,4 +127,54 @@ If they do not exist the script creates them. CoreFunctions contains all your sc
 
 ## Testing Locally
 
-To run and test this locally you can just run the `Get-BootstrapAndRun.ps1` command in powershell from the root of the repo, all paths are relative to the script location.
+To run and test this locally you can just run the `$env:SYSTEM_LOCAL_TEST = "Y"; .\Get-BootstrapAndRun.ps1` command in powershell from the root of the repo, all paths are relative to the script location.
+
+# This script uses several environment variables to control its behavior and configuration. Below is a list of these environment variables along with their descriptions
+
+# SYSTEM_SCRIPTS_ROOT
+
+# Description: Specifies the root directory for system scripts
+
+# Usage: Logged to provide information about the script's root directory
+
+# Example: C:\Scripts
+
+# SYSTEM_AUTO_RUN_SETUP
+
+# Description: Determines whether the setup script should run automatically after the bootstrap script completes
+
+# Usage: If set to a true value (Y, YES, TRUE, 1), the setup script will run automatically
+
+# Example: TRUE
+
+# SYSTEM_SKIP_WINGET_DSC
+
+# Description: Indicates whether to skip the Windows Package Manager (WinGet) Desired State Configuration (DSC) step
+
+# Usage: If set to a true value (Y, YES, TRUE, 1), the WinGet DSC step will be skipped
+
+# Example: YES
+
+# SIMPLESETTINGS_CONFIG_FILE
+
+# Description: Specifies the path to the SimpleSettings configuration file
+
+# Usage: Logged to provide information about the configuration file being used
+
+# Example: C:\Config\settings.json
+
+# USERPROFILE
+
+# Description: Represents the path to the user's profile directory
+
+# Usage: Logged to provide information about the user's profile directory
+
+# Example: C:\Users\Username
+
+# SYSTEM_LOGGING_LEVEL
+
+# Description: The level of logging used in the script execution
+
+# Usage: Logged to provide information about the user's profile directory
+
+# Example: C:\Users\Username
