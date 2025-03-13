@@ -12,7 +12,7 @@ function Get-ScoopApp($Name) {
 }
 
 function Update-ScoopApp($Name) {
-    if (((Test-Path 'env:SYSTEM_STEP_GET_SCOOP_STATUS') -eq $false) -or $null -eq $env:SYSTEM_STEP_GET_SCOOP_STATUS -or $env:SYSTEM_STEP_GET_SCOOP_STATUS -eq '') {
+    if (((Test-Path 'env:SYSTEM_STEP_GET_SCOOP_STATUS') -eq $false) -or ($null -eq $env:SYSTEM_STEP_GET_SCOOP_STATUS) -or ($env:SYSTEM_STEP_GET_SCOOP_STATUS -eq '')) {
         return
     }
     $scoopStatus = ($env:SYSTEM_STEP_GET_SCOOP_STATUS | ConvertFrom-Json)
@@ -30,6 +30,9 @@ function Get-ScoopAppVersion($Name) {
 }
 
 function Get-ScoopAppLatestVersion($Name) {
+    if (((Test-Path 'env:SYSTEM_STEP_GET_SCOOP_STATUS') -eq $false) -or ($null -eq $env:SYSTEM_STEP_GET_SCOOP_STATUS) -or ($env:SYSTEM_STEP_GET_SCOOP_STATUS -eq '')) {
+        return ''
+    }
     $scoopStatus = ($env:SYSTEM_STEP_GET_SCOOP_STATUS | ConvertFrom-Json)
     if (($scoopStatus | Where-Object { $_.Name -eq $Name })) { 
         return $(($scoopStatus | Where-Object { $_.Name -eq $Name }).'Latest Version')
