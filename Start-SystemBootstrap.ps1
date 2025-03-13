@@ -12,6 +12,9 @@ function Get-ScoopApp($Name) {
 }
 
 function Update-ScoopApp($Name) {
+    if ($null -eq $env:SYSTEM_STEP_GET_SCOOP_STATUS -or $env:SYSTEM_STEP_GET_SCOOP_STATUS -eq '') {
+        return
+    }
     $scoopStatus = ($env:SYSTEM_STEP_GET_SCOOP_STATUS | ConvertFrom-Json)
     if (($scoopStatus | Where-Object { $_.Name -eq $Name })) { 
         wi "Updating $Name to: '$(($scoopStatus | Where-Object {$_.Name -eq $Name}).'Latest Version')'"
