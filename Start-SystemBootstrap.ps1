@@ -317,12 +317,12 @@ $steps += [pscustomobject]@{
         $pwsh7Exe = $pwsh7Cmd.Path   
 
         Write-StepResult -StepName 'Check for WinGet' -Status 'Checking: Microsoft.WinGet.Client'
-        & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Client' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force }"
+        $clientResult = & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Client' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force }"
         Write-StepResult -StepName 'Check for WinGet' -Status 'Checking: Microsoft.WinGet.Configuration'
-        & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Configuration' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Configuration -Scope CurrentUser -Force }"
+        $configurationResult = & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Configuration' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Configuration -Scope CurrentUser -Force }"
         Write-StepResult -StepName 'Check for WinGet' -Status 'Checking: Repair-WinGetPackageManager'
-        & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command 'Repair-WinGetPackageManager -Latest -Force'
-        return $true, "WinGet Updated", $null
+        $repairWinGetPackageManagerResult = & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command 'Repair-WinGetPackageManager -Latest -Force'
+        return $true, "WinGet Updated", @($clientResult, $configurationResult, $repairWinGetPackageManagerResult)
 
     }
 }

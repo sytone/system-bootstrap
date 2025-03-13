@@ -96,17 +96,16 @@ function Write-StepResult {
     $WHITE_FOREGROUND = "$ESCAPE[37m"
     $GREEN_FOREGROUND = "$ESCAPE[32m"
     $RED_BACKGROUND = "$ESCAPE[41m"
-    if ($StepName.length -gt 80) {
+
+    if ($StepName.length -gt 30) {
         $StepName = $StepName.Substring(0, 30)
     }
-    if ($Status.length -gt 80) {
+
+    if ($Status.length -gt 40) {
         $Status = $Status.Substring(0, 40)
     }
-    Write-Host "$($StepName) - $($Status)"
-    Write-Host "$($StepName.length) - $($Status.length)"
-    Write-Host "$((80 - $StepName.length - $Status.length))"
+
     $dots = $("." * (80 - $StepName.length - $Status.length) )
-    
 
     if ($Status -eq 'Failed') {
         Write-Host "`r$($StepName)$($dots)$WHITE_FOREGROUND$RED_BACKGROUND$($Status)$NORMAL"
