@@ -47,7 +47,7 @@ $initialSteps += [pscustomobject]@{
         if (-not (Test-Path $bootstrapFolder)) {
             return $false, "Failed to create folder", "Folder failed to be created at: '$bootstrapFolder'"
         }
-
+        New-Item -Path "$bootstrapFolder\Logs" -ItemType Directory -Force | Out-Null
         return $true, "Folder created", "Folder created at: '$bootstrapFolder'"
     }
 }
@@ -135,7 +135,7 @@ foreach ($step in $initialSteps) {
 }
 
 foreach ($step in $initialSteps) {
-    $step | ConvertTo-Json | Set-Content -Path "$PSScriptRoot\Logs\$($step.id).json"
+    $step | ConvertTo-Json | Set-Content -Path "$bootstrapFolder\Logs\$($step.id).json"
 }
 
 foreach ($step in $initialSteps) {
@@ -203,7 +203,7 @@ wi ""
 $stepsOutcome = Start-StepExecution $finalSteps
 
 foreach ($step in $stepsOutcome) {
-    $step | ConvertTo-Json | Set-Content -Path "$PSScriptRoot\Logs\$($step.id).json"
+    $step | ConvertTo-Json | Set-Content -Path "$bootstrapFolder\Logs\$($step.id).json"
 }
 
 if ($stepsOutcome.FailedSteps -gt 0) {
