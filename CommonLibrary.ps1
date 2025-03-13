@@ -100,7 +100,7 @@ function Write-StepResult {
         $StepName = $StepName.Substring(0, 30)
     }
     if ($Status.length -gt 80) {
-        $Status = $Status.Substring(0, 75)
+        $Status = $Status.Substring(0, 40)
     }
     $dots = $("." * (80 - $StepName.length - $Status.length) )
 
