@@ -1,6 +1,6 @@
 # Common Library and variables.
 
-$version = "1.0.2"
+$version = "1.1.0"
 $bootstrapFolder = "$env:temp\system-bootstrap"
 
 $trueValues = @{
