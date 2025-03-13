@@ -135,6 +135,10 @@ foreach ($step in $initialSteps) {
 }
 
 foreach ($step in $initialSteps) {
+    $step | ConvertTo-Json | Set-Content -Path "$PSScriptRoot\Logs\$($step.id).json"
+}
+
+foreach ($step in $initialSteps) {
     if (!$step.passed) {
         exit 1
     }
@@ -197,6 +201,10 @@ wi " SYSTEM_SKIP_DESKTOP_SHORTCUT_CREATION: '$env:SYSTEM_SKIP_DESKTOP_SHORTCUT_C
 wi ""
 
 $stepsOutcome = Start-StepExecution $finalSteps
+
+foreach ($step in $stepsOutcome) {
+    $step | ConvertTo-Json | Set-Content -Path "$PSScriptRoot\Logs\$($step.id).json"
+}
 
 if ($stepsOutcome.FailedSteps -gt 0) {
     Write-Host "One or more steps failed"

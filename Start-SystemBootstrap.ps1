@@ -12,14 +12,24 @@ function Get-ScoopApp($Name) {
 }
 
 function Update-ScoopApp($Name) {
+    $result = "";
     if (((Test-Path 'env:SYSTEM_STEP_GET_SCOOP_STATUS') -eq $false) -or ($null -eq $env:SYSTEM_STEP_GET_SCOOP_STATUS) -or ($env:SYSTEM_STEP_GET_SCOOP_STATUS -eq '')) {
         return
     }
     $scoopStatus = ($env:SYSTEM_STEP_GET_SCOOP_STATUS | ConvertFrom-Json)
     if (($scoopStatus | Where-Object { $_.Name -eq $Name })) { 
-        wi "Updating $Name to: '$(($scoopStatus | Where-Object {$_.Name -eq $Name}).'Latest Version')'"
-        scoop update $Name
+        $result += "Updating $Name to: '$(($scoopStatus | Where-Object {$_.Name -eq $Name}).'Latest Version')'`n"
+        $command = "scoop update $Name *>&1"
+        $result += Invoke-Expression $command
+        $result += $updateOutput
     }
+    return $result
+}
+
+function Install-ScoopApp($Name) {
+    $command = "scoop install $Name *>&1"
+    $result = Invoke-Expression $command
+    return $result
 }
 
 function Get-ScoopAppVersion($Name) {
@@ -163,11 +173,11 @@ $steps += [pscustomobject]@{
     detailsAction = {}
     script        = {
         if ($null -eq (Get-ScoopApp -Name 'git')) {
-            scoop install git
-            return $true, "GIT installed", (scoop info git).Version
+            $result = Install-ScoopApp -Name 'git'
+            return $true, "GIT installed", @((scoop info git).Version, $result)
         } else {
-            Update-ScoopApp -Name 'git'
-            return $true, "GIT already installed", (scoop info git).Version
+            $result = Update-ScoopApp -Name 'git'
+            return $true, "GIT already installed", @((scoop info git).Version, $result)
         }
     }
 }
@@ -238,11 +248,11 @@ $steps += [pscustomobject]@{
     detailsAction = {}
     script        = {
         if ($null -eq (Get-ScoopApp -Name 'gsudo')) {
-            scoop install gsudo
-            return $true, "gsudo installed", (scoop info gsudo).Version
+            $result = Install-ScoopApp -Name 'gsudo'
+            return $true, "gsudo installed", @((scoop info gsudo).Version, $result)
         } else {
-            Update-ScoopApp -Name 'gsudo'
-            return $true, "gsudo already installed", (scoop info gsudo).Version
+            $result = Update-ScoopApp -Name 'gsudo'
+            return $true, "gsudo already installed", @((scoop info gsudo).Version, $result)
         }
     }
 }
@@ -263,8 +273,8 @@ $steps += [pscustomobject]@{
         if ($runningInPowerShell) {
 
             if ($null -eq (Get-ScoopApp -Name 'pwsh')) {
-                scoop install pwsh
-                return $true, "PowerShell Core installed", (scoop info pwsh).Version
+                $result = Install-ScoopApp -Name 'pwsh'
+                return $true, "PowerShell Core installed", @((scoop info pwsh).Version, $result)
             } else {
                 $updateVersion = Get-ScoopAppLatestVersion -Name 'pwsh'
                 if ($updateVersion -ne '') {
@@ -272,8 +282,8 @@ $steps += [pscustomobject]@{
                         Write-StepResult -StepName $step.name -Status 'Waiting for PWSH process to stop' -InitialStatus
                         Start-Sleep -Seconds 5
                     }
-                    Update-ScoopApp -Name 'pwsh'
-                    return $true, "PowerShell Core updated", (scoop info pwsh).Version
+                    $result = Update-ScoopApp -Name 'pwsh'
+                    return $true, "PowerShell Core updated", @((scoop info pwsh).Version, $result)
                 }
                 return $true, "PowerShell Core up to date", (scoop info pwsh).Version
             }
@@ -305,7 +315,7 @@ $steps += [pscustomobject]@{
 
         $pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
         $pwsh7Exe = $pwsh7Cmd.Path   
-        
+
         Write-StepResult -StepName 'Check for WinGet' -Status 'Checking: Microsoft.WinGet.Client'
         & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "if (`$null -eq (Get-Module -Name 'Microsoft.WinGet.Client' -All -ListAvailable)) { Install-Module Microsoft.WinGet.Client -Scope CurrentUser -Force }"
         Write-StepResult -StepName 'Check for WinGet' -Status 'Checking: Microsoft.WinGet.Configuration'
@@ -317,7 +327,64 @@ $steps += [pscustomobject]@{
     }
 }
 
+# Configure DSC if enabled
+$steps += [pscustomobject]@{
+    id            = 'configure_dsc'
+    name          = 'Configure DSC'
+    description   = 'Configures the DSC.'
+    passed        = $false
+    details       = $null
+    errorAction   = {
+        Write-Host 'Unable to configure DSC.'
+    }
+    detailsAction = {}
+    script        = {
+        if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $trueValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
+            $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
+            gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
+            return $true, "DSC configured", $null
+        } else {
+            return $true, "DSC skipped", $null
+        }
+    }
+}
+
+# Check and install required modules
+$steps += [pscustomobject]@{
+    id            = 'check_required_modules'
+    name          = 'Check for Required Modules'
+    description   = 'Checks for required modules and installs them if missing.'
+    passed        = $false
+    details       = $null
+    errorAction   = {
+        Write-Host 'Unable to check for required modules.'
+    }
+    detailsAction = {}
+    script        = {
+        $expectedPowerShellModules = @(
+            'poshlog',
+            'Microsoft.PowerShell.ConsoleGuiTools',
+            'SimpleSettings'
+        )
+        $pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
+        $pwsh7Exe = $pwsh7Cmd.Path   
+        $installCommands = @()
+
+        foreach ($moduleName in $expectedPowerShellModules) {
+            Write-StepResult -StepName 'Check for Required Modules' -Status "Checking: $moduleName"
+            $installCommand = "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force } else { Write-Host 'Module $moduleName is installed.' }"
+            $installCommands += $installCommand
+            & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "& { $installCommand }"
+        }
+        return $true, "Required modules installed", @($expectedPowerShellModules, $installCommands)
+    }
+}
+
 $stepsOutcome = Start-StepExecution $steps
+
+foreach ($step in $steps) {
+    $step | ConvertTo-Json | Set-Content -Path "$PSScriptRoot\Logs\$($step.id).json"
+}
 
 if ($stepsOutcome.FailedSteps -gt 0) {
     Write-HeadingBlock -Message "One or more steps failed"
@@ -333,35 +400,6 @@ if ($stepsOutcome.FailedSteps -gt 0) {
     }
     
     exit 1
-}
-
-# ------------------------------------------ [Base System DSC] -----------------------------------------
-Write-HeadingBlock -Message 'Configure Base System DSC'
-
-if ($null -eq $env:SYSTEM_SKIP_WINGET_DSC -or -not $trueValues.ContainsKey($($env:SYSTEM_SKIP_WINGET_DSC).ToUpper())) {
-    wi "Running Base DSC"
-    $baseSystemDscFile = Resolve-Path $PSScriptRoot/basesystem.dsc.yaml
-    gsudo winget configure -f $baseSystemDscFile --accept-configuration-agreements
-} else {
-    wi "Skipped running Base DSC"
-}
-
-# ---------------------------------------- [Check for Required Modules] -----------------------------------------
-# Minial set of modules to make life easier. All in PowerShell Core.
-Write-HeadingBlock -Message 'Check for Required Modules'
-
-$expectedPowerShellModules = @(
-    'poshlog',
-    'Microsoft.PowerShell.ConsoleGuiTools',
-    'SimpleSettings'
-)
-
-foreach ($moduleName in $expectedPowerShellModules) {
-    wi "Checking that $moduleName module is installed."
-    $installCommand = "if (`$null -eq (Get-Module -Name '$moduleName' -All -ListAvailable)) { Install-Module $moduleName -Scope CurrentUser -Force } else { Write-Host 'Module $moduleName is installed.' }"
-    wi "Running:"
-    wi "$installCommand"
-    & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "& { $installCommand }"
 }
 
 # ---------------------------------------- [Notifiy user to run next step] -----------------------------------------
