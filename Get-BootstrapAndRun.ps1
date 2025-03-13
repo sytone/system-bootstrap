@@ -73,7 +73,9 @@ $initialSteps += [pscustomobject]@{
         foreach ($file in $files) {
             try {
                 if ($null -eq $env:SYSTEM_LOCAL_TEST) {
-                    $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/main/$file"
+                    # Pull latest commit hash and use that to get latest file.
+                    $sha = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main").Content | ConvertFrom-Json).Commit.sha
+                    $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/$sha/$file"
                     $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
                 } else {
                     # testing locally. Copy the files from the local repo to the temp folder.
