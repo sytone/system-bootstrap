@@ -141,7 +141,8 @@ foreach ($step in $initialSteps) {
 }
 
 # Common library now available to use. Everything before this is native powershell commands only and nothing special.
-. $PSScriptRoot\CommonLibrary.ps1
+$commonLibrary = "$bootstrapFolder\CommonLibrary.ps1"
+. $commonLibrary
 
 $finalSteps = @()
 
