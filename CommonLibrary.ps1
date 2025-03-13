@@ -102,7 +102,11 @@ function Write-StepResult {
     if ($Status.length -gt 80) {
         $Status = $Status.Substring(0, 40)
     }
+    Write-Host "$($StepName) - $($Status)"
+    Write-Host "$($StepName.length) - $($Status.length)"
+    Write-Host "$((80 - $StepName.length - $Status.length))"
     $dots = $("." * (80 - $StepName.length - $Status.length) )
+    
 
     if ($Status -eq 'Failed') {
         Write-Host "`r$($StepName)$($dots)$WHITE_FOREGROUND$RED_BACKGROUND$($Status)$NORMAL"
