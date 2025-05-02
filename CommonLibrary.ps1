@@ -1,6 +1,6 @@
 # Common Library and variables.
 
-$version = "1.1.0"
+$version = "1.1.1"
 $bootstrapFolder = "$env:temp\system-bootstrap"
 
 $trueValues = @{
@@ -88,7 +88,8 @@ function Write-StepResult {
     param(
         $StepName,
         $Status,
-        [switch] $InitialStatus
+        [switch] $InitialStatus,
+        [switch] $FinalStatus
     )
 
     $ESCAPE = $([char]27)
@@ -112,8 +113,10 @@ function Write-StepResult {
     } else {
         if ($InitialStatus) {
             Write-Host "$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
-        } else {
+        } elseif ($FinalStatus) {
             Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL"
+        } else {
+            Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
         }
     }
 }
