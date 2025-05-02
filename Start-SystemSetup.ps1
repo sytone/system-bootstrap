@@ -23,9 +23,10 @@ foreach ($moduleName in $expectedPowerShellModules) {
 }
 
 # ---------------------------------------- [Setup logging] -----------------------------------------
+# Add-SinkConsole -OutputTemplate '[{Timestamp:yyyyMMdd-HHmmss}][{Level:u3}] {Message:lj}{NewLine}{Exception}' |
 New-Logger |
 Set-MinimumLevel -Value Verbose |
-Add-SinkConsole -OutputTemplate '[{Timestamp:yyyyMMdd-HHmmss}][{Level:u3}] {Message:lj}{NewLine}{Exception}' |
+Add-SinkConsole |
 Start-Logger
 
 if (-not (Get-Command -Name Write-Notification -ErrorAction SilentlyContinue)) {
