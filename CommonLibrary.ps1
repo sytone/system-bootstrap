@@ -110,15 +110,19 @@ function Write-StepResult {
 
     if ($Status -eq 'Failed') {
         Write-Host "`r$($StepName)$($dots)$WHITE_FOREGROUND$RED_BACKGROUND$($Status)$NORMAL"
-    } else {
-        if ($InitialStatus) {
-            Write-Host "$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
-        } elseif ($FinalStatus) {
-            Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL"
-        } else {
-            Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
-        }
+        return
+    } 
+    
+    if ($InitialStatus) {
+        Write-Host "$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
+        return
+    } 
+    
+    if ($FinalStatus) {
+        Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL"
+        return
     }
+    Write-Host "`r$($StepName)$($dots)$GREEN_FOREGROUND$($Status)$NORMAL" -NoNewline
 }
 
 function Start-StepExecution($steps) {
@@ -145,7 +149,7 @@ function Start-StepExecution($steps) {
 
         $step.details = $status[2]     
         Set-EnvironmentVariable -name $step.OutputVariable -value $($step.details | ConvertTo-Json -Depth 10)
-        Write-StepResult -StepName $step.name -Status $status[1]
+        Write-StepResult -StepName $step.name -Status $status[1] -FinalStatus
 
         if ($step.passed -eq $false) {
             break
