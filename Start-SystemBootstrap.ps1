@@ -278,12 +278,22 @@ $steps += [pscustomobject]@{
             } else {
                 $updateVersion = Get-ScoopAppLatestVersion -Name 'pwsh'
                 if ($updateVersion -ne '') {
+                    $retryCount = 0
+                    $attemptInstall = $true
                     while ((Get-Process -Name pwsh -ErrorAction SilentlyContinue).count -gt 0) {
+                        if($retryCount -gt 5) {
+                            # Skip PWSH update if process is still running after 5 checks.
+                            $attemptInstall  = $false
+                            break
+                        }
                         Write-StepResult -StepName $step.name -Status 'Waiting for PWSH process to stop' -InitialStatus
                         Start-Sleep -Seconds 5
+                        $retryCount++
                     }
-                    $result = Update-ScoopApp -Name 'pwsh'
-                    return $true, "PowerShell Core updated", @((scoop info pwsh).Version, $result)
+                    if($attemptInstall) {
+                        $result = Update-ScoopApp -Name 'pwsh'
+                        return $true, "PowerShell Core updated", @((scoop info pwsh).Version, $result)
+                    }
                 }
                 return $true, "PowerShell Core up to date", (scoop info pwsh).Version
             }
