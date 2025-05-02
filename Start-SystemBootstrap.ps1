@@ -416,6 +416,9 @@ if ($stepsOutcome.FailedSteps -gt 0) {
     exit 1
 }
 
+$pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
+$pwsh7Exe = $pwsh7Cmd.Path   
+
 # ---------------------------------------- [Notifiy user to run next step] -----------------------------------------
 Write-HeadingBlock -Message 'Notifiy user to run next step'
 wi " "
@@ -436,9 +439,6 @@ if ($null -eq $env:SYSTEM_AUTO_RUN_SETUP -or -not $trueValues.ContainsKey($($env
         $runNextStep = 'N'
     }
 }
-
-$pwsh7Cmd = Get-Command 'pwsh.exe' -ErrorAction SilentlyContinue
-$pwsh7Exe = $pwsh7Cmd.Path   
 
 if ($runNextStep -eq "" -or $runNextStep -eq "Y" -or $runNextStep -eq "y") {
     & $pwsh7Exe -ExecutionPolicy Bypass -NoProfile -NoLogo -NonInteractive -Command "$PSScriptRoot\Start-SystemSetup.ps1"
