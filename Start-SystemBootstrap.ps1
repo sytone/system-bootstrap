@@ -286,7 +286,7 @@ $steps += [pscustomobject]@{
                             $attemptInstall  = $false
                             break
                         }
-                        Write-StepResult -StepName $step.name -Status 'Waiting for PWSH process to stop' -InitialStatus
+                        Write-StepResult -StepName $step.name -Status 'Waiting for PWSH process to stop'
                         Start-Sleep -Seconds 5
                         $retryCount++
                     }
