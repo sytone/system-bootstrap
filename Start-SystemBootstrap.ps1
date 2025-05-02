@@ -286,13 +286,17 @@ $steps += [pscustomobject]@{
                             $attemptInstall  = $false
                             break
                         }
-                        Write-StepResult -StepName $step.name -Status 'Waiting for PWSH process to stop'
+                        Write-StepResult -StepName $step.name -Status "Waiting for PWSH process to stop ($retryCount)"
                         Start-Sleep -Seconds 5
                         $retryCount++
                     }
                     if($attemptInstall) {
                         $result = Update-ScoopApp -Name 'pwsh'
                         return $true, "PowerShell Core updated", @((scoop info pwsh).Version, $result)
+                    } else {
+                        # Not a failure but notify user.
+                        return $true, "PowerShell Core Update Skipped", (scoop info pwsh).Version
+
                     }
                 }
                 return $true, "PowerShell Core up to date", (scoop info pwsh).Version
