@@ -85,7 +85,7 @@ $initialSteps += [pscustomobject]@{
                       $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main"
                     }
                     
-                    $sha = $mainBranchDetails | ConvertFrom-Json).Commit.sha
+                    $sha = ($mainBranchDetails | ConvertFrom-Json).Commit.sha
                     $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/$sha/$file"
                     $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
                 } else {
