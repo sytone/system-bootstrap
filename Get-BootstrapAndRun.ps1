@@ -74,7 +74,18 @@ $initialSteps += [pscustomobject]@{
             try {
                 if ($null -eq $env:SYSTEM_LOCAL_TEST) {
                     # Pull latest commit hash and use that to get latest file.
-                    $sha = ((Invoke-WebRequest "https://api.github.com/repos/sytone/system-bootstrap/branches/main").Content | ConvertFrom-Json).Commit.sha
+                    if ($null -ne $env:SYSTEM_GITHUB_PAT) {
+                      $authenticationToken = [System.Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$($env:SYSTEM_GITHUB_PAT)"))
+                        $headers = @{
+                            "Authorization" = [String]::Format("Basic {0}", $authenticationToken)
+                            "Content-Type"  = "application/json"
+                        }                    
+                      $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main" -Headers $headers 
+                    } else {
+                      $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main"
+                    }
+                    
+                    $sha = $mainBranchDetails | ConvertFrom-Json).Commit.sha
                     $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/$sha/$file"
                     $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
                 } else {
