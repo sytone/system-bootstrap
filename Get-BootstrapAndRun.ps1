@@ -70,45 +70,58 @@ $initialSteps += [pscustomobject]@{
             'CommonLibrary.ps1'
         )
 
+        $returnMessage = ""
+
         foreach ($file in $files) {
             try {
                 if ($null -eq $env:SYSTEM_LOCAL_TEST) {
                     # Pull latest commit hash and use that to get latest file.
                     if ($null -ne $env:SYSTEM_GITHUB_PAT) {
                       $authenticationToken = [System.Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$($env:SYSTEM_GITHUB_PAT)"))
-                        $headers = @{
-                            "Authorization" = [String]::Format("Basic {0}", $authenticationToken)
-                            "Content-Type"  = "application/json"
-                        }                    
+                      $headers = @{
+                          "Authorization" = [String]::Format("Basic {0}", $authenticationToken)
+                          "Content-Type"  = "application/json"
+                      }                    
+                      $returnMessage = "from GitHub using PAT"
                       $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main" -Headers $headers 
                     } else {
-                      $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main"
+                        $returnMessage = "from GitHub"
+                        $mainBranchDetails = Invoke-RestMethod -Method get -Uri "https://api.github.com/repos/sytone/system-bootstrap/branches/main"
                     }
                     
                     $sha = ($mainBranchDetails | ConvertFrom-Json).Commit.sha
                     $scriptDownload = Invoke-WebRequest "https://raw.githubusercontent.com/sytone/system-bootstrap/$sha/$file"
                     $scriptDownload.Content | Out-File -FilePath "$bootstrapFolder\$file" -Force | Out-Null
                 } else {
+                    $returnMessage = "using local files."
                     # testing locally. Copy the files from the local repo to the temp folder.
                     $scriptDownload = Copy-Item -Path "$PSScriptRoot\$file" -Destination "$bootstrapFolder\$file" -Force | Out-Null
                 }
 
             } catch {
-                return $false, "Failed to download files", "$bootstrapFolder\$file"
+                return $false, "Failed to download $returnMessage", "$bootstrapFolder\$file"
             }
         }
 
         foreach ($file in $files) {
             if (-not (Test-Path "$bootstrapFolder\$file")) {
-                return $false, "Failed to download files", "$bootstrapFolder\$file"
+                return $false, "Failed to download $returnMessage", "$bootstrapFolder\$file"
             }
         }
 
-        return $true, "Files downloaded", $files
+        return $true, "Downloaded $returnMessage", $files
     }
 }
 
 Write-Output "SYSTEM_LOCAL_TEST: '$env:SYSTEM_LOCAL_TEST'"
+
+$usingGitHubPat = $null -ne $env:SYSTEM_GITHUB_PAT
+
+if($usingGitHubPat) {
+    Write-Output "SYSTEM_GITHUB_PAT: Being Used"
+} else {
+    Write-Output "SYSTEM_GITHUB_PAT: Not Set"
+}
 
 # Create folder and download first.
 
