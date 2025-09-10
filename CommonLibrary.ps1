@@ -148,7 +148,7 @@ function Start-StepExecution($steps) {
         }
 
         $step.details = $status[2]     
-        Set-EnvironmentVariable -name $step.OutputVariable -value $($step.details | ConvertTo-Json -Depth 10)
+        Set-EnvironmentVariable -name $step.OutputVariable -value $($step.details | ConvertTo-Json [-Compress -Depth 10)
         Write-StepResult -StepName $step.name -Status $status[1] -FinalStatus
 
         if ($step.passed -eq $false) {
